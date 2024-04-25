@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 # shortmemory
 the one project i plan to start
+=======
+>>>>>>> f47e69f (Initial commit from Create Next App)
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
