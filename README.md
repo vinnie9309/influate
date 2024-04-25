@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 # shortmemory
+
 the one project i plan to start
 =======
 >>>>>>> f47e69f (Initial commit from Create Next App)
