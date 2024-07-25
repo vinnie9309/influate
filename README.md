@@ -1,6 +1,6 @@
 # influate
 
-the one project i plan to start
+the one project i plan to start AND FINISH
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
