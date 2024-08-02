@@ -1,21 +1,23 @@
 "use client"
 import { useState } from "react"
-import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth"
+import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth"
 import { auth } from "../../../firebase/config"
+import { useRouter } from "next/navigation"
 
-const SignUp = () => {
+const LoginForm = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [createUserWithEmailAndPassword] =
-    useCreateUserWithEmailAndPassword(auth)
+  const [signInWithEmailAndPassword] = useSignInWithEmailAndPassword(auth)
+  const router = useRouter()
 
-  const handleSignUp = async () => {
+  const handleSignIn = async () => {
     try {
-      const res = await createUserWithEmailAndPassword(email, password)
+      const res = await signInWithEmailAndPassword(email, password)
       console.log({ res })
       sessionStorage.setItem("user", true)
       setEmail("")
       setPassword("")
+      router.push("/")
     } catch (e) {
       console.error(e)
     }
@@ -24,7 +26,7 @@ const SignUp = () => {
   return (
     <div>
       <div>
-        <h1>Sign Up</h1>
+        <h1>Sign In</h1>
         <input
           type="email"
           placeholder="Email"
@@ -37,10 +39,10 @@ const SignUp = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button onClick={handleSignUp}>Sign Up</button>
+        <button onClick={handleSignIn}>Sign In</button>
       </div>
     </div>
   )
 }
 
-export default SignUp
+export default LoginForm
