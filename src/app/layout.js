@@ -1,8 +1,8 @@
 import "./globals.css"
 
 export const metadata = {
-  title: "shortmemory.com",
-  description: "where you keep your short memory"
+  title: "influate.bg",
+  description: "meet, offer, collab"
 }
 
 export default function RootLayout({ children }) {
