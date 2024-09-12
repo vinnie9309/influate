@@ -1,13 +1,11 @@
 import LoginForm from "../components/Login/LoginForm"
 import RegisterForm from "../components/Register/RegisterForm"
+import GuestPage from "./guest/page"
 
 export default function Home() {
   return (
     <div>
-      <LoginForm />
-      <h1>Welcome to shortmemory.com</h1>
-      <p>where you keep your short memory</p>
-      <RegisterForm />
+      <GuestPage />
     </div>
   )
 }
