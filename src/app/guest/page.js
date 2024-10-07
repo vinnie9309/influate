@@ -1,29 +1,62 @@
 "use client"
-import Link from "next/link"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { signUp, signIn } from "../../lib/auth"
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
+  CardDescription,
+  CardContent
 } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import Link from "next/link"
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [role, setRole] = useState("")
   const [typePage, setTypePage] = useState("register")
+
+  const handleSignUp = async (e) => {
+    e.preventDefault()
+    const formData = {
+      firstName,
+      lastName,
+      role,
+      email,
+      password
+    }
+    console.log("Form Data:", formData)
+    // try {
+    //   await signUp(email, password)
+    //   alert("Registration successful!")
+    // } catch (error) {
+    //   alert("Error during registration: " + error.message)
+    // }
+  }
+
+  const handleSignIn = async (e) => {
+    e.preventDefault()
+    try {
+      await signIn(email, password)
+      alert("Login successful!")
+    } catch (error) {
+      alert("Error during login: " + error.message)
+    }
+  }
 
   return (
     <>
@@ -36,46 +69,75 @@ export default function LoginForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSignUp}>
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="first-name">Име</Label>
+                    <Input
+                      id="first-name"
+                      placeholder="Иван"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="last-name">Фамилия</Label>
+                    <Input
+                      id="last-name"
+                      placeholder="Иванов"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <Select
+                  value={role}
+                  onValueChange={(value) => setRole(value)}
+                  requiredrequired
+                >
+                  <SelectTrigger className="w-100">
+                    <SelectValue placeholder="Вие сте" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="influencer">
+                        Инфлуенсър/афилиат
+                      </SelectItem>
+                      <SelectItem value="company">Компания</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 <div className="grid gap-2">
-                  <Label htmlFor="first-name">Име</Label>
-                  <Input id="first-name" placeholder="Max" required />
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="az@naprimer.com"
+                    required
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="last-name">Фамилия</Label>
-                  <Input id="last-name" placeholder="Robinson" required />
+                  <Label htmlFor="password">Парола</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
+                <Button type="submit" className="w-full">
+                  Създайте профил
+                </Button>
+                <Button variant="outline" className="w-full">
+                  Влезте с Google
+                </Button>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="az@naprimer.com"
-                  required
-                />
-              </div>
-              <Select>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Вие сте" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Инфлуенсър/афилиат</SelectItem>
-                  <SelectItem value="dark">Компания</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Парола</Label>
-                <Input id="password" type="password" />
-              </div>
-              <Button type="submit" className="w-full">
-                Създайте профил
-              </Button>
-              <Button variant="outline" className="w-full">
-                Влезте с Google
-              </Button>
-            </div>
+            </form>
             <div className="mt-4 text-center text-sm">
               Вече сте регистрирани?{" "}
               <Link
@@ -95,25 +157,35 @@ export default function LoginForm() {
             <CardDescription>Въведете Вашите данни</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="az@naprimer.com"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Парола</Label>
-              <Input id="password" type="password" required />
-            </div>
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
-            <Button variant="outline" className="w-full">
-              Login with Google
-            </Button>
+            <form onSubmit={handleSignIn}>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="az@naprimer.com"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Парола</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Login
+              </Button>
+              <Button variant="outline" className="w-full">
+                Login with Google
+              </Button>
+            </form>
           </CardContent>
           <div className="mb-6 text-center text-sm">
             Нямате профил?{" "}
