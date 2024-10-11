@@ -2,16 +2,13 @@
 
 import useAuth from "../hooks/useAuth" // Import your custom useAuth hook
 
-export default function Page({ children }) {
-  const isAuthenticated = useAuth() // Call the custom auth hook
-
-  if (!isAuthenticated) {
-    return <div>Loading...</div> // Show loading state while checking auth
-  }
-
+const Home = function () {
+  useAuth() // Call the custom auth hook
   return (
     <div>
-      {children} {/* Render the page content if authenticated */}
+      <h1>Welcome to the Page</h1>
     </div>
   )
 }
+
+export default Home

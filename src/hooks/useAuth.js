@@ -16,16 +16,16 @@ const useAuth = () => {
       const token = localStorage.getItem("token")
       const user = JSON.parse(localStorage.getItem("user"))
       if (token && user) {
-        dispatch(loggedIn({ user, token })) // Restore auth state if found
+        dispatch(loggedIn({ user, token }))
       } else {
-        dispatch(loggedOut()) // Ensure state is logged out if no data
+        dispatch(loggedOut())
       }
     }
   }, [dispatch])
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/guest") // Redirect to guest page if not authenticated
+      router.push("/guest")
     }
   }, [isAuthenticated, router])
 
