@@ -1,9 +1,9 @@
-"use client" // This ensures it's a client component
+"use client"
 
-import useAuth from "../hooks/useAuth" // Import your custom useAuth hook
+import useAuth from "../hooks/useAuth"
 
 const Home = function () {
-  useAuth() // Call the custom auth hook
+  useAuth()
   return (
     <div>
       <h1>Welcome to the Page</h1>
