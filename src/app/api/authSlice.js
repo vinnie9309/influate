@@ -23,10 +23,8 @@ export const authSlice = createSlice({
   }
 })
 
-// Export actions for use in components
 export const { loggedIn, loggedOut } = authSlice.actions
 
-// Selectors to access auth state
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated
 export const selectUser = (state) => state.auth.user
 export const selectToken = (state) => state.auth.token
