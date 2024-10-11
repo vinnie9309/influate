@@ -1,14 +1,14 @@
+"use client"
 import "./globals.css"
-
-export const metadata = {
-  title: "influate.bg",
-  description: "meet, offer, collab"
-}
+import { Provider } from "react-redux"
+import store from "../app/api/store"
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <Provider store={store}>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </Provider>
   )
 }

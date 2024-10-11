@@ -1,11 +1,17 @@
-import LoginForm from "../components/Login/LoginForm"
-import RegisterForm from "../components/Register/RegisterForm"
-import GuestPage from "../components/Guest/Guest"
+"use client" // This ensures it's a client component
 
-export default function Home() {
+import useAuth from "../hooks/useAuth" // Import your custom useAuth hook
+
+export default function Page({ children }) {
+  const isAuthenticated = useAuth() // Call the custom auth hook
+
+  if (!isAuthenticated) {
+    return <div>Loading...</div> // Show loading state while checking auth
+  }
+
   return (
-    <div className="bg-main-bg min-h-screen">
-      <GuestPage />
+    <div>
+      {children} {/* Render the page content if authenticated */}
     </div>
   )
 }
