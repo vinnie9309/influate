@@ -1,8 +1,7 @@
 import { auth } from "../../firebase/config"
 import {
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut
+  signInWithEmailAndPassword
 } from "firebase/auth"
 
 export const signUp = async (email, password) => {
@@ -14,7 +13,6 @@ export const signUp = async (email, password) => {
     )
     return userCredential.user
   } catch (error) {
-    console.error("Error signing up:", error)
     throw error
   }
 }
@@ -28,7 +26,6 @@ export const signIn = async (email, password) => {
     )
     return userCredential.user
   } catch (error) {
-    console.error("Error signing in:", error)
     throw error
   }
 }

@@ -11,21 +11,24 @@ const useAuth = () => {
   const dispatch = useDispatch()
   const router = useRouter()
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token")
-      const user = JSON.parse(localStorage.getItem("user"))
-      if (token && user) {
-        dispatch(loggedIn({ user, token }))
-      } else {
-        dispatch(loggedOut())
-      }
-    }
-  }, [dispatch])
+  // useEffect(() => {
+  //   if (typeof window !== "undefined") {
+  //     const token = localStorage.getItem("token")
+  //     const user = JSON.parse(localStorage.getItem("user"))
+  //     if (token && user) {
+  //       dispatch(loggedIn({ user, token }))
+  //     } else {
+  //       dispatch(loggedOut())
+  //     }
+  //   }
+  // }, [dispatch])
 
   useEffect(() => {
+    console.log(isAuthenticated)
     if (!isAuthenticated) {
       router.push("/guest")
+    } else {
+      router.push("/")
     }
   }, [isAuthenticated, router])
 

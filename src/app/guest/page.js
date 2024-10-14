@@ -1,6 +1,8 @@
 "use client"
 import { useState } from "react"
+import { useDispatch } from "react-redux"
 import { signUp, signIn } from "../../lib/auth"
+import { loggedIn } from "../../app/api/authSlice"
 import {
   Card,
   CardHeader,
@@ -13,7 +15,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select"
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import useAuth from "@/hooks/useAuth"
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
@@ -29,30 +31,30 @@ export default function LoginForm() {
   const [lastName, setLastName] = useState("")
   const [role, setRole] = useState("")
   const [typePage, setTypePage] = useState("register")
+  const dispatch = useDispatch()
+  useAuth()
 
   const handleSignUp = async (e) => {
     e.preventDefault()
-    const formData = {
-      firstName,
-      lastName,
-      role,
-      email,
-      password
+    try {
+      const user = await signUp(email, password)
+      console.log(user)
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        userName: user.displayName
+      }
+      dispatch(loggedIn(userData))
+    } catch (error) {
+      alert("Error during registration: " + error.message)
     }
-    console.log("Form Data:", formData)
-    // try {
-    //   await signUp(email, password)
-    //   alert("Registration successful!")
-    // } catch (error) {
-    //   alert("Error during registration: " + error.message)
-    // }
   }
 
   const handleSignIn = async (e) => {
     e.preventDefault()
     try {
-      await signIn(email, password)
-      alert("Login successful!")
+      const user = await signIn(email, password)
+      dispatch(loggedIn(user))
     } catch (error) {
       alert("Error during login: " + error.message)
     }
