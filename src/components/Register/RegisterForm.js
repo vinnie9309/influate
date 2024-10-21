@@ -23,7 +23,7 @@ import { useDispatch } from "react-redux"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-const RegisterForm = (props) => {
+const RegisterForm = ({ setLogin }) => {
   const dispatch = useDispatch()
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -82,7 +82,7 @@ const RegisterForm = (props) => {
             <Select
               value={role}
               onValueChange={(value) => setRole(value)}
-              requiredrequired
+              required
             >
               <SelectTrigger className="w-100">
                 <SelectValue placeholder="Вие сте" />
@@ -124,11 +124,7 @@ const RegisterForm = (props) => {
         </form>
         <div className="mt-4 text-center text-sm">
           Вече сте регистрирани?{" "}
-          <Link
-            href="#"
-            className="underline"
-            onClick={() => props.setLogin("")}
-          >
+          <Link href="#" className="underline" onClick={setLogin}>
             Влезте в профила си
           </Link>
         </div>

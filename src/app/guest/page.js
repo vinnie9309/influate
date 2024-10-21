@@ -1,17 +1,22 @@
+// src/app/guest/page.js
 "use client"
 import { useEffect, useState } from "react"
 import RegisterForm from "@/components/Register/RegisterForm"
-export default function LoginForm() {
-  const [typePage, setTypePage] = useState("register")
+import LoginForm from "@/components/Login/LoginForm"
+
+export default function AuthPage() {
+  const [showRegister, setShowRegister] = useState(true)
+
   useEffect(() => {
-    console.log("typePage", typePage)
-  }, [typePage])
+    console.log("showRegister", showRegister)
+  }, [showRegister])
+
   return (
     <>
-      {typePage === "register" ? (
-        <RegisterForm setLogin={setTypePage} />
+      {showRegister ? (
+        <RegisterForm setLogin={() => setShowRegister(false)} />
       ) : (
-        <LoginForm setRegister={setTypePage} />
+        <LoginForm setRegister={() => setShowRegister(true)} />
       )}
     </>
   )

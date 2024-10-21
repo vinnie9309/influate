@@ -1,3 +1,4 @@
+// src/components/Login/LoginForm.js
 import { useState } from "react"
 import { useDispatch } from "react-redux"
 import { signIn } from "../../lib/auth"
@@ -15,11 +16,11 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-const LoginForm = (props) => {
+const LoginForm = ({ setRegister }) => {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const dispatch = useDispatch()
-  const router = useRouter()
   const handleSignIn = async (e) => {
     e.preventDefault()
     try {
@@ -74,11 +75,7 @@ const LoginForm = (props) => {
       </CardContent>
       <div className="mb-6 text-center text-sm">
         Нямате профил?{" "}
-        <Link
-          href="#"
-          className="underline"
-          onClick={() => props.setRegister("register")}
-        >
+        <Link href="#" className="underline" onClick={setRegister}>
           Регистрирайте се
         </Link>
       </div>
