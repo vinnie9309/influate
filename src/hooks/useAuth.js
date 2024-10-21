@@ -1,36 +1,25 @@
 import { useEffect } from "react"
+import Cookies from "js-cookie"
 import { useSelector, useDispatch } from "react-redux"
-import { useRouter } from "next/navigation"
+
 import {
   selectIsAuthenticated,
   loggedIn,
   loggedOut
 } from "../app/api/authSlice"
+
 const useAuth = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
   const dispatch = useDispatch()
-  const router = useRouter()
-
-  // useEffect(() => {
-  //   if (typeof window !== "undefined") {
-  //     const token = localStorage.getItem("token")
-  //     const user = JSON.parse(localStorage.getItem("user"))
-  //     if (token && user) {
-  //       dispatch(loggedIn({ user, token }))
-  //     } else {
-  //       dispatch(loggedOut())
-  //     }
-  //   }
-  // }, [dispatch])
 
   useEffect(() => {
-    console.log(isAuthenticated)
-    if (!isAuthenticated) {
-      router.push("/guest")
+    const token = Cookies.get("authToken")
+    if (token) {
+      dispatch(loggedIn({ token }))
     } else {
-      router.push("/")
+      dispatch(loggedOut())
     }
-  }, [isAuthenticated, router])
+  }, [dispatch])
 
   return isAuthenticated
 }
