@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useDispatch } from "react-redux"
 import { signIn } from "../../lib/auth"
+import { getUser, addUser } from "../../../firebase/config"
 import { loggedIn } from "../../app/api/authSlice"
 import {
   Card,
@@ -15,7 +16,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-
+const handleShit = function () {
+  getUser("uid")
+}
 const LoginForm = ({ setRegister }) => {
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -38,6 +41,7 @@ const LoginForm = ({ setRegister }) => {
   }
   return (
     <Card className="w-full max-w-sm mx-auto mt-20">
+      <button onClick={handleShit}>Get User</button>
       <CardHeader>
         <CardTitle className="text-2xl">Влезте в профила си</CardTitle>
         <CardDescription>Въведете Вашите данни</CardDescription>

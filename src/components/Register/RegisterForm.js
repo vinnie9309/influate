@@ -82,7 +82,7 @@ const RegisterForm = ({ setLogin }) => {
             <Select
               value={role}
               onValueChange={(value) => setRole(value)}
-              required
+              requiredrequired
             >
               <SelectTrigger className="w-100">
                 <SelectValue placeholder="Вие сте" />
