@@ -10,8 +10,7 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-  databaseURL:
-    "https://shortmemory-6f0db-default-rtdb.europe-west1.firebasedatabase.app"
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DB_URL
 }
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
 const auth = getAuth(app)
