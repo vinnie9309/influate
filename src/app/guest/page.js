@@ -1,4 +1,3 @@
-// src/app/guest/page.js
 "use client"
 import { useEffect, useState } from "react"
 import RegisterForm from "@/components/Register/RegisterForm"
