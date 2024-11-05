@@ -1,6 +1,6 @@
-import { initializeApp, getApps, getApp } from "firebase/app"
-import { getAuth } from "firebase/auth"
-import { getDatabase, ref, set, get } from "firebase/database"
+import {initializeApp, getApps, getApp} from "firebase/app"
+import {getAuth} from "firebase/auth"
+import {getDatabase, ref, set, get} from "firebase/database"
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,10 +16,10 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
 const auth = getAuth(app)
 const db = getDatabase(app)
 
-export { app, auth, db }
+export {app, auth, db}
 
-export const addUser = function (uid, userData) {
-  const userRef = ref(db, "users/" + uid)
+export const addUser = function (userData) {
+  const userRef = ref(db, "users/" + userData.uid)
   return set(userRef, userData)
 }
 

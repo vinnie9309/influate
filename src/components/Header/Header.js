@@ -1,13 +1,15 @@
 import React from "react"
-import { logOut } from "../../lib/auth"
-import { useDispatch } from "react-redux"
-import { loggedOut } from "../../app/api/authSlice"
+import {logOut} from "@/lib/auth"
+import {useDispatch} from "react-redux"
+import {loggedOut} from "@/app/api/authSlice"
+
 const Header = () => {
   const dispatch = useDispatch()
   const handleLogout = () => {
     try {
-      logOut()
-      dispatch(loggedOut())
+      logOut().then(r =>
+        dispatch(loggedOut())
+      )
     } catch (error) {
       console.error("Error signing out:", error)
     }
@@ -22,6 +24,9 @@ const Header = () => {
           </li>
           <li>
             <a href="#about">About</a>
+          </li>
+          <li>
+            <button>Моят профил</button>
           </li>
           <li>
             <button onClick={handleLogout}>Logout</button>
