@@ -1,6 +1,6 @@
 import Cookies from "js-cookie"
-import { getIdToken } from "firebase/auth"
-import { auth } from "../../firebase/config"
+import {getIdToken} from "firebase/auth"
+import {auth} from "../../firebase/config"
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -14,7 +14,7 @@ export const signUp = async (email, password) => {
       email,
       password
     )
-    storeAuthTokenInCookie()
+    await storeAuthTokenInCookie()
     return userCredential.user
   } catch (error) {
     throw error
@@ -28,7 +28,7 @@ export const signIn = async (email, password) => {
       email,
       password
     )
-    storeAuthTokenInCookie()
+    await storeAuthTokenInCookie()
     return userCredential.user
   } catch (error) {
     throw error
