@@ -1,26 +1,25 @@
 "use client"
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+import type { User } from "firebase/auth"
 import { AUDIENCE_AGES, CATEGORIES, FOLLOWER_RANGES, PLATFORMS } from "@/lib/constants"
-import { createProfile, getContacts, saveContacts, updateProfile } from "@/lib/data"
+import { useAuth, useContacts, useCreateProfile, useSaveProfile } from "@/lib/queries"
+import type { Contacts, Profile, ProfileFields, Role } from "@/lib/types"
 import RequireAuth from "@/components/RequireAuth"
 import RolePicker from "@/components/RolePicker"
-import { Button, Card, ChipToggle, ErrorNote, Field, PageTitle, Spinner } from "@/components/ui"
+import { Button, Card, ChipToggle, ErrorNote, Field, PageTitle, SelectField, Spinner, TextAreaField } from "@/components/ui"
 
-function toggle(list, value) {
-  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
-}
+const toggle = <T,>(list: readonly T[], value: T): T[] =>
+  list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
 
-function ChooseRole({ user }) {
-  const [role, setRole] = useState("creator")
+function ChooseRole({ user }: { user: User }) {
+  const createProfile = useCreateProfile()
+  const [role, setRole] = useState<Role>("creator")
   const [name, setName] = useState(user.displayName ?? "")
-  const [busy, setBusy] = useState(false)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setBusy(true)
-    await createProfile(user.uid, { role, displayName: name.trim(), email: user.email })
+    createProfile.mutate({ uid: user.uid, role, displayName: name.trim(), email: user.email })
   }
 
   return (
@@ -35,7 +34,8 @@ function ChooseRole({ user }) {
           onChange={(e) => setName(e.target.value)}
           required
         />
-        <Button type="submit" size="lg" disabled={busy}>
+        <ErrorNote>{createProfile.isError && "Couldn't save. Please try again."}</ErrorNote>
+        <Button type="submit" size="lg" disabled={createProfile.isPending}>
           Continue
         </Button>
       </form>
@@ -43,7 +43,7 @@ function ChooseRole({ user }) {
   )
 }
 
-function Section({ title, description, children }) {
+function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <Card className="flex flex-col gap-5 p-6 sm:p-8">
       <div className="flex flex-col gap-1">
@@ -55,60 +55,54 @@ function Section({ title, description, children }) {
   )
 }
 
-function ProfileForm({ profile }) {
+const editableFields = ({ displayName, headline, city, bio, website, categories, platforms, audienceAge, followers, targetAudience }: Profile): ProfileFields => ({
+  displayName,
+  headline,
+  city,
+  bio,
+  website,
+  categories,
+  platforms,
+  audienceAge,
+  followers,
+  targetAudience
+})
+
+const trimmed = (fields: ProfileFields): ProfileFields =>
+  Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, typeof v === "string" ? v.trim() : v])) as ProfileFields
+
+function ProfileForm({ profile, initialContacts }: { profile: Profile; initialContacts: Contacts }) {
   const router = useRouter()
   const params = useSearchParams()
+  const saveProfile = useSaveProfile()
   const isBrand = profile.role === "brand"
-  const [form, setForm] = useState({
-    displayName: profile.displayName ?? "",
-    headline: profile.headline ?? "",
-    city: profile.city ?? "",
-    bio: profile.bio ?? "",
-    website: profile.website ?? "",
-    categories: profile.categories ?? [],
-    platforms: profile.platforms ?? [],
-    audienceAge: profile.audienceAge ?? "",
-    followers: profile.followers ?? "",
-    targetAudience: profile.targetAudience ?? ""
-  })
-  const [contacts, setContacts] = useState(null)
+  const [form, setForm] = useState<ProfileFields>(() => editableFields(profile))
+  const [contacts, setContacts] = useState<Contacts>(initialContacts)
   const [error, setError] = useState("")
-  const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    getContacts(profile.uid).then((c) => setContacts(c ?? { email: "", phone: "", links: "" }))
-  }, [profile.uid])
+  type TextKey = { [K in keyof ProfileFields]: ProfileFields[K] extends string ? K : never }[keyof ProfileFields]
+  const set = (key: TextKey) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }))
+  const setContact = (key: keyof Contacts) => (e: ChangeEvent<HTMLInputElement>) =>
+    setContacts((c) => ({ ...c, [key]: e.target.value }))
+  const toggleIn = (key: "categories" | "platforms", value: string) => () =>
+    setForm((f) => ({ ...f, [key]: toggle(f[key], value) }))
 
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
-  const setContact = (key) => (e) => setContacts((c) => ({ ...c, [key]: e.target.value }))
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!form.categories.length) {
       setError("Pick at least one category so the right people can find you.")
       return
     }
     setError("")
-    setBusy(true)
-    try {
-      await updateProfile(profile.uid, {
-        ...form,
-        displayName: form.displayName.trim(),
-        headline: form.headline.trim(),
-        city: form.city.trim(),
-        bio: form.bio.trim(),
-        website: form.website.trim(),
-        targetAudience: form.targetAudience.trim()
-      })
-      await saveContacts(profile.uid, contacts)
-      router.push(`/u/${profile.uid}`)
-    } catch {
-      setError("Couldn't save your profile. Please try again.")
-      setBusy(false)
-    }
+    saveProfile.mutate(
+      { uid: profile.uid, fields: trimmed(form), contacts },
+      {
+        onSuccess: () => router.push(`/u/${profile.uid}`),
+        onError: () => setError("Couldn't save your profile. Please try again.")
+      }
+    )
   }
-
-  if (!contacts) return <Spinner />
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -131,9 +125,8 @@ function ProfileForm({ profile }) {
           maxLength={80}
           placeholder={isBrand ? "Sustainable sportswear made in Bulgaria" : "Home workouts for busy parents"}
         />
-        <Field
+        <TextAreaField
           id="bio"
-          as="textarea"
           label="About"
           value={form.bio}
           onChange={set("bio")}
@@ -150,11 +143,7 @@ function ProfileForm({ profile }) {
       <Section title={isBrand ? "What you sell" : "What you create"} description="Choose every category that fits. This drives search.">
         <div className="flex flex-wrap gap-2" role="group" aria-label="Categories">
           {CATEGORIES.map((c) => (
-            <ChipToggle
-              key={c}
-              selected={form.categories.includes(c)}
-              onClick={() => setForm((f) => ({ ...f, categories: toggle(f.categories, c) }))}
-            >
+            <ChipToggle key={c} selected={form.categories.includes(c)} onClick={toggleIn("categories", c)}>
               {c}
             </ChipToggle>
           ))}
@@ -167,11 +156,7 @@ function ProfileForm({ profile }) {
             <span className="text-sm font-semibold text-subtle">Platforms</span>
             <div className="flex flex-wrap gap-2" role="group" aria-label="Platforms">
               {PLATFORMS.map((p) => (
-                <ChipToggle
-                  key={p}
-                  selected={form.platforms.includes(p)}
-                  onClick={() => setForm((f) => ({ ...f, platforms: toggle(f.platforms, p) }))}
-                >
+                <ChipToggle key={p} selected={form.platforms.includes(p)} onClick={toggleIn("platforms", p)}>
                   {p}
                 </ChipToggle>
               ))}
@@ -179,18 +164,16 @@ function ProfileForm({ profile }) {
           </div>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
+          <SelectField
             id="audienceAge"
-            as="select"
             label={isBrand ? "Target age" : "Main audience age"}
             options={AUDIENCE_AGES}
             value={form.audienceAge}
             onChange={set("audienceAge")}
           />
           {!isBrand && (
-            <Field
+            <SelectField
               id="followers"
-              as="select"
               label="Followers (all platforms)"
               options={FOLLOWER_RANGES}
               value={form.followers}
@@ -214,19 +197,13 @@ function ProfileForm({ profile }) {
           <Field id="contactEmail" type="email" label="Contact email" value={contacts.email} onChange={setContact("email")} />
           <Field id="phone" type="tel" label="Phone" value={contacts.phone} onChange={setContact("phone")} />
         </div>
-        <Field
-          id="links"
-          label="Social links"
-          value={contacts.links}
-          onChange={setContact("links")}
-          placeholder="instagram.com/you, tiktok.com/@you"
-        />
+        <Field id="links" label="Social links" value={contacts.links} onChange={setContact("links")} placeholder="instagram.com/you, tiktok.com/@you" />
       </Section>
 
       <ErrorNote>{error}</ErrorNote>
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" size="lg" disabled={busy}>
-          {busy ? "Saving…" : "Save profile"}
+        <Button type="submit" size="lg" disabled={saveProfile.isPending}>
+          {saveProfile.isPending ? "Saving…" : "Save profile"}
         </Button>
         <Button variant="ghost" size="lg" onClick={() => router.back()}>
           Cancel
@@ -236,11 +213,21 @@ function ProfileForm({ profile }) {
   )
 }
 
+const noContacts: Contacts = { email: "", phone: "", links: "" }
+
+/** Waits for the private contact details so the form can start from them. */
+function ProfileFormLoader({ profile }: { profile: Profile }) {
+  const contacts = useContacts(profile.uid)
+  if (contacts.isPending) return <Spinner />
+  return <ProfileForm profile={profile} initialContacts={contacts.data ?? noContacts} />
+}
+
 function EditProfile() {
   const { user, profile } = useAuth()
+  if (!user) return null
   return (
     <main className="mx-auto max-w-[820px] px-6 pb-24 pt-4">
-      {profile ? <ProfileForm key={profile.uid} profile={profile} /> : <ChooseRole user={user} />}
+      {profile ? <ProfileFormLoader key={profile.uid} profile={profile} /> : <ChooseRole user={user} />}
     </main>
   )
 }

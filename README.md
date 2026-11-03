@@ -15,7 +15,14 @@ Results are entered manually for now. Automatic tracking (e.g. a Shopify integra
 
 ## Stack
 
-Node 26, Next.js 16 (App Router), React 19, Tailwind CSS 4, Firebase Auth and Firestore. Access control lives in [`firestore.rules`](firestore.rules).
+Node 26, Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS 4, Firebase Auth and Firestore.
+
+- `src/lib/types.ts`: domain types (profiles, connections, partnerships, results)
+- `src/lib/data.ts`: plain async Firestore reads and writes
+- `src/lib/queries.ts`: TanStack Query hooks; every read is a query, every write a mutation that invalidates what it changes
+- `src/lib/auth.ts`: Firebase auth exposed through `useSyncExternalStore`
+
+Components never fetch in `useEffect`. Access control lives in [`firestore.rules`](firestore.rules).
 
 ### Data model
 

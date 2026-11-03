@@ -1,17 +1,17 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ExternalLink, Lock, MapPin } from "lucide-react"
-import { useAuth } from "@/lib/auth-context"
 import { ROLES } from "@/lib/constants"
-import { getContacts, watchConnection, watchProfile } from "@/lib/data"
+import { useAuth, useConnection, useContacts, useProfile } from "@/lib/queries"
+import type { Contacts } from "@/lib/types"
 import ConnectPanel from "@/components/ConnectPanel"
 import NewPartnershipForm from "@/components/NewPartnershipForm"
 import { Avatar, Button, Card, PageTitle, Spinner, Tag } from "@/components/ui"
 
-function Detail({ label, children }) {
-  if (!children || (Array.isArray(children) && !children.length)) return null
+function Detail({ label, children }: { label: string; children: ReactNode }) {
+  if (!children) return null
   return (
     <div className="flex flex-col gap-1 rounded-[14px] bg-paper p-3.5">
       <span className="text-xs text-muted">{label}</span>
@@ -20,18 +20,14 @@ function Detail({ label, children }) {
   )
 }
 
-function Contacts({ uid, visible, name }) {
-  const [contacts, setContacts] = useState(null)
-  const [failed, setFailed] = useState(false)
+const contactRows: readonly [label: string, key: keyof Contacts][] = [
+  ["Email", "email"],
+  ["Phone", "phone"],
+  ["Links", "links"]
+]
 
-  useEffect(() => {
-    if (!visible) return
-    getContacts(uid)
-      .then(setContacts)
-      .catch(() => setFailed(true))
-  }, [uid, visible])
-
-  if (visible && failed) return <p className="text-sm text-danger">Couldn&apos;t load contact details. Refresh to try again.</p>
+function ContactDetails({ uid, visible, name }: { uid: string; visible: boolean; name: string }) {
+  const contacts = useContacts(uid, visible)
 
   if (!visible) {
     return (
@@ -41,44 +37,33 @@ function Contacts({ uid, visible, name }) {
       </div>
     )
   }
-  if (!contacts) return null
-  const rows = [
-    ["Email", contacts.email],
-    ["Phone", contacts.phone],
-    ["Links", contacts.links]
-  ].filter(([, v]) => v)
+  if (contacts.isError) return <p className="text-sm text-danger">Couldn&apos;t load contact details. Refresh to try again.</p>
+  if (!contacts.data) return null
+
+  const rows = contactRows.flatMap(([label, key]) => (contacts.data?.[key] ? [[label, contacts.data[key]] as const] : []))
+  if (!rows.length) return <p className="text-sm text-muted">No contact details added yet.</p>
   return (
     <dl className="grid gap-3 sm:grid-cols-3">
-      {rows.length ? (
-        rows.map(([k, v]) => (
-          <div key={k} className="flex flex-col gap-1 rounded-[14px] bg-brand-soft p-3.5">
-            <dt className="text-xs text-brand-dark">{k}</dt>
-            <dd className="wrap-break-word text-[15px] font-bold">{v}</dd>
-          </div>
-        ))
-      ) : (
-        <p className="text-sm text-muted">No contact details added yet.</p>
-      )}
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex flex-col gap-1 rounded-[14px] bg-brand-soft p-3.5">
+          <dt className="text-xs text-brand-dark">{label}</dt>
+          <dd className="wrap-break-word text-[15px] font-bold">{value}</dd>
+        </div>
+      ))}
     </dl>
   )
 }
 
+const isWebUrl = (value: string) => /^https?:\/\//.test(value)
+
 export default function PublicProfilePage() {
-  const { uid } = useParams()
+  const { uid } = useParams<{ uid: string }>()
   const { user, profile: me, loading } = useAuth()
-  const [profile, setProfile] = useState(undefined)
-  const [connection, setConnection] = useState(null)
+  const { data: profile, isPending } = useProfile(uid)
+  const { data: connection = null } = useConnection(me?.uid, uid)
   const [startingPartnership, setStartingPartnership] = useState(false)
 
-  useEffect(() => watchProfile(uid, setProfile), [uid])
-
-  const isMe = me?.uid === uid
-  useEffect(() => {
-    if (!me || isMe) return
-    return watchConnection(me.uid, uid, setConnection)
-  }, [me, uid, isMe])
-
-  if (profile === undefined || loading) return <Spinner />
+  if (isPending || loading) return <Spinner />
   if (!profile) {
     return (
       <main className="mx-auto max-w-[820px] px-6 pb-24 pt-4">
@@ -87,8 +72,9 @@ export default function PublicProfilePage() {
     )
   }
 
-  const connected = connection?.status === "accepted" && connection.confirmed
-  const details = profile.role === "creator" ? profile.platforms : []
+  const isMe = me?.uid === uid
+  const isBrand = profile.role === "brand"
+  const connected = connection?.status === "accepted"
 
   return (
     <main className="mx-auto flex max-w-[960px] flex-col gap-5 px-6 pb-24 pt-4">
@@ -108,7 +94,7 @@ export default function PublicProfilePage() {
               <div className="flex flex-col gap-1 pb-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-[22px] font-extrabold tracking-[-0.02em]">{profile.displayName}</h1>
-                  <Tag tone={profile.role === "brand" ? "dark" : "brand"}>{ROLES[profile.role].label}</Tag>
+                  <Tag tone={isBrand ? "dark" : "brand"}>{ROLES[profile.role].label}</Tag>
                 </div>
                 {profile.city && (
                   <span className="flex items-center gap-1 text-sm text-muted">
@@ -123,7 +109,7 @@ export default function PublicProfilePage() {
                 <Button href="/profile/edit" variant="outline">
                   Edit profile
                 </Button>
-              ) : user && me ? (
+              ) : me ? (
                 <ConnectPanel me={me} other={profile} connection={connection} />
               ) : (
                 <Button href={`/login?next=/u/${uid}`}>Log in to connect</Button>
@@ -133,24 +119,30 @@ export default function PublicProfilePage() {
 
           {profile.headline && <p className="text-lg font-semibold">{profile.headline}</p>}
           {profile.bio && <p className="whitespace-pre-line text-[15px] leading-relaxed text-body">{profile.bio}</p>}
-          {isMe && !profile.categories?.length && (
+          {isMe && !profile.categories.length && (
             <p className="rounded-xl bg-sun-soft px-4 py-3 text-sm font-medium text-sun-ink">
-              Your profile is almost empty. <Link href="/profile/edit" className="underline">Add your details</Link> so the
-              right people can find you.
+              Your profile is almost empty.{" "}
+              <Link href="/profile/edit" className="underline">
+                Add your details
+              </Link>{" "}
+              so the right people can find you.
             </p>
           )}
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
-            <Detail label={profile.role === "brand" ? "Sells" : "Creates"}>{profile.categories?.join(", ")}</Detail>
-            <Detail label="Platforms">{details?.join(", ")}</Detail>
-            <Detail label={profile.role === "brand" ? "Target age" : "Audience age"}>{profile.audienceAge}</Detail>
+            <Detail label={isBrand ? "Sells" : "Creates"}>{profile.categories.join(", ")}</Detail>
+            <Detail label="Platforms">{isBrand ? "" : profile.platforms.join(", ")}</Detail>
+            <Detail label={isBrand ? "Target age" : "Audience age"}>{profile.audienceAge}</Detail>
             <Detail label="Followers">{profile.followers}</Detail>
           </div>
-          {profile.targetAudience && (
-            <Detail label={profile.role === "brand" ? "Ideal customer" : "Audience"}>{profile.targetAudience}</Detail>
-          )}
-          {/^https?:\/\//.test(profile.website ?? "") && (
-            <a href={profile.website} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1.5 self-start text-[15px] font-semibold">
+          <Detail label={isBrand ? "Ideal customer" : "Audience"}>{profile.targetAudience}</Detail>
+          {isWebUrl(profile.website) && (
+            <a
+              href={profile.website}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="flex items-center gap-1.5 self-start text-[15px] font-semibold"
+            >
               {profile.website.replace(/^https?:\/\//, "")}
               <ExternalLink aria-hidden="true" className="h-4 w-4" />
             </a>
@@ -164,7 +156,7 @@ export default function PublicProfilePage() {
             <h2 className="text-lg font-bold">Contact details</h2>
             {isMe && <p className="text-sm text-muted">Only you and people you&apos;re connected with can see these.</p>}
           </div>
-          <Contacts uid={uid} visible={isMe || connected} name={profile.displayName} />
+          <ContactDetails uid={uid} visible={isMe || connected} name={profile.displayName} />
         </Card>
       )}
 
@@ -177,9 +169,7 @@ export default function PublicProfilePage() {
             </div>
             {!startingPartnership && <Button onClick={() => setStartingPartnership(true)}>New partnership</Button>}
           </div>
-          {startingPartnership && (
-            <NewPartnershipForm me={me} other={profile} onCancel={() => setStartingPartnership(false)} />
-          )}
+          {startingPartnership && <NewPartnershipForm me={me} other={profile} onCancel={() => setStartingPartnership(false)} />}
         </Card>
       )}
     </main>

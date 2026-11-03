@@ -1,9 +1,11 @@
-const options = [
+import type { Role } from "@/lib/types"
+
+const options: readonly { value: Role; title: string; text: string }[] = [
   { value: "creator", title: "I'm a creator", text: "I make content and want brand partnerships" },
   { value: "brand", title: "I'm a brand", text: "I sell products and want creators to promote them" }
 ]
 
-export default function RolePicker({ value, onChange }) {
+export default function RolePicker({ value, onChange }: { value: Role; onChange: (role: Role) => void }) {
   return (
     <fieldset className="grid grid-cols-2 gap-3">
       <legend className="mb-1.5 text-sm font-semibold text-subtle">Who are you?</legend>

@@ -1,31 +1,31 @@
 "use client"
-import { useState } from "react"
+import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { createPartnership } from "@/lib/data"
+import { useCreatePartnership } from "@/lib/queries"
+import type { Profile } from "@/lib/types"
 import { Button, ErrorNote, Field } from "./ui"
 
-export default function NewPartnershipForm({ me, other, onCancel }) {
+interface NewPartnershipFormProps {
+  me: Profile
+  other: Profile
+  onCancel?: () => void
+}
+
+export default function NewPartnershipForm({ me, other, onCancel }: NewPartnershipFormProps) {
   const router = useRouter()
+  const createPartnership = useCreatePartnership()
   const [title, setTitle] = useState("")
   const [code, setCode] = useState("")
   const [terms, setTerms] = useState("")
-  const [error, setError] = useState("")
-  const [busy, setBusy] = useState(false)
 
-  const creator = me.role === "creator" ? me : other
-  const brand = me.role === "brand" ? me : other
+  const [creator, brand] = me.role === "creator" ? [me, other] : [other, me]
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
-    setBusy(true)
-    try {
-      const id = await createPartnership({ creatorUid: creator.uid, brandUid: brand.uid, createdBy: me.uid, title, code, terms })
-      router.push(`/partnerships/${id}`)
-    } catch {
-      setError("Couldn't create the partnership. Please try again.")
-      setBusy(false)
-    }
+    createPartnership.mutate(
+      { creatorUid: creator.uid, brandUid: brand.uid, createdBy: me.uid, title, code, terms },
+      { onSuccess: (id) => router.push(`/partnerships/${id}`) }
+    )
   }
 
   return (
@@ -51,9 +51,9 @@ export default function NewPartnershipForm({ me, other, onCancel }) {
         maxLength={200}
         placeholder="10% off for followers, 15% commission per sale"
       />
-      <ErrorNote>{error}</ErrorNote>
+      <ErrorNote>{createPartnership.isError && "Couldn't create the partnership. Please try again."}</ErrorNote>
       <div className="flex gap-2">
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" disabled={createPartnership.isPending}>
           Start partnership
         </Button>
         {onCancel && (

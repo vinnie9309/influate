@@ -1,30 +1,27 @@
 "use client"
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { redirect, useSearchParams } from "next/navigation"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth } from "@/lib/queries"
 import AuthCard, { GoogleButton, authErrorMessage, signInWithGoogle } from "@/components/AuthCard"
 import { Button, ErrorNote, Field } from "@/components/ui"
 
+/** Only follow local paths, never an absolute URL from the query string. */
+const safeNext = (next: string | null): string => (next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard")
+
 function LoginForm() {
   const params = useSearchParams()
-  const router = useRouter()
   const { user, loading } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
 
-  // Only follow local paths, never an absolute URL from the query string.
-  const next = params.get("next")?.startsWith("/") && !params.get("next").startsWith("//") ? params.get("next") : "/dashboard"
+  if (!loading && user) redirect(safeNext(params.get("next")))
 
-  useEffect(() => {
-    if (!loading && user) router.replace(next)
-  }, [loading, user, next, router])
-
-  const run = async (signIn) => {
+  const run = async (signIn: () => Promise<unknown>) => {
     setError("")
     setBusy(true)
     try {
@@ -35,9 +32,9 @@ function LoginForm() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    run(() => signInWithEmailAndPassword(auth, email, password))
+    void run(() => signInWithEmailAndPassword(auth, email, password))
   }
 
   return (
@@ -54,15 +51,7 @@ function LoginForm() {
       }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Field
-          id="email"
-          type="email"
-          label="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
+        <Field id="email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         <Field
           id="password"
           type="password"
@@ -77,7 +66,7 @@ function LoginForm() {
           {busy ? "Logging in…" : "Log in"}
         </Button>
       </form>
-      <GoogleButton onClick={() => run(signInWithGoogle)} disabled={busy} />
+      <GoogleButton onClick={() => void run(signInWithGoogle)} disabled={busy} />
     </AuthCard>
   )
 }

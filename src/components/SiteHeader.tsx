@@ -2,17 +2,23 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut } from "firebase/auth"
+import { useQueryClient } from "@tanstack/react-query"
 import { auth } from "@/lib/firebase"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth } from "@/lib/queries"
 import Logo from "./Logo"
 import { Button } from "./ui"
 
-const appLinks = [
+interface NavLink {
+  href: string
+  label: string
+}
+
+const appLinks: NavLink[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/discover", label: "Discover" }
 ]
 
-const marketingLinks = [
+const marketingLinks: NavLink[] = [
   { href: "/#creators", label: "For creators" },
   { href: "/#brands", label: "For brands" },
   { href: "/#how", label: "How it works" }
@@ -22,10 +28,15 @@ export default function SiteHeader() {
   const { user, profile } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
-  const links = user ? appLinks : marketingLinks
+  const queryClient = useQueryClient()
+  const links = user
+    ? [...appLinks, ...(profile ? [{ href: `/u/${profile.uid}`, label: "My profile" }] : [])]
+    : marketingLinks
 
   const handleSignOut = async () => {
     await signOut(auth)
+    // Cached reads belong to the previous user.
+    queryClient.clear()
     router.push("/")
   }
 
@@ -33,24 +44,16 @@ export default function SiteHeader() {
     <header className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-6 py-6">
       <Logo href={user ? "/dashboard" : "/"} />
       <nav aria-label="Main" className="flex flex-wrap gap-7 text-[15px] font-medium">
-        {links.map((l) => (
+        {links.map(({ href, label }) => (
           <Link
-            key={l.href}
-            href={l.href}
-            aria-current={pathname === l.href ? "page" : undefined}
-            className={pathname === l.href ? "text-ink" : "text-subtle hover:text-ink"}
+            key={href}
+            href={href}
+            aria-current={pathname === href ? "page" : undefined}
+            className={pathname === href ? "text-ink" : "text-subtle hover:text-ink"}
           >
-            {l.label}
+            {label}
           </Link>
         ))}
-        {profile && (
-          <Link
-            href={`/u/${profile.uid}`}
-            className={pathname === `/u/${profile.uid}` ? "text-ink" : "text-subtle hover:text-ink"}
-          >
-            My profile
-          </Link>
-        )}
       </nav>
       <div className="flex gap-2.5">
         {user ? (

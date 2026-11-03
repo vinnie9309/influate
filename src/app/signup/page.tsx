@@ -1,11 +1,13 @@
 "use client"
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
-import { createUserWithEmailAndPassword, updateProfile as updateAuthProfile } from "firebase/auth"
+import { redirect, useRouter, useSearchParams } from "next/navigation"
+import { createUserWithEmailAndPassword, updateProfile as updateAuthProfile, type User } from "firebase/auth"
+import { useQueryClient } from "@tanstack/react-query"
 import { auth } from "@/lib/firebase"
-import { useAuth } from "@/lib/auth-context"
-import { createProfile, getProfile } from "@/lib/data"
+import { getProfile } from "@/lib/data"
+import { keys, useAuth, useCreateProfile } from "@/lib/queries"
+import type { Role } from "@/lib/types"
 import AuthCard, { GoogleButton, authErrorMessage, signInWithGoogle } from "@/components/AuthCard"
 import RolePicker from "@/components/RolePicker"
 import { Button, ErrorNote, Field } from "@/components/ui"
@@ -13,50 +15,50 @@ import { Button, ErrorNote, Field } from "@/components/ui"
 function SignupForm() {
   const params = useSearchParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user, loading } = useAuth()
-  const [role, setRole] = useState(params.get("role") === "brand" ? "brand" : "creator")
+  const createProfile = useCreateProfile()
+  const [role, setRole] = useState<Role>(params.get("role") === "brand" ? "brand" : "creator")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    if (!loading && user && !busy) router.replace("/dashboard")
-  }, [loading, user, busy, router])
+  // Already signed in (and not mid-signup): nothing to do here.
+  if (!loading && user && !busy) redirect("/dashboard")
 
-  const finish = async (newUser, displayName) => {
-    if (!(await getProfile(newUser.uid))) {
-      await createProfile(newUser.uid, { role, displayName, email: newUser.email })
-    }
+  const finish = async (newUser: User, displayName: string) => {
+    const existing = await queryClient.fetchQuery({ queryKey: keys.profile(newUser.uid), queryFn: () => getProfile(newUser.uid) })
+    if (!existing) await createProfile.mutateAsync({ uid: newUser.uid, role, displayName, email: newUser.email })
     router.push("/profile/edit?welcome=1")
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const run = async (signUp: () => Promise<void>) => {
     setError("")
     setBusy(true)
     try {
-      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password)
-      await updateAuthProfile(newUser, { displayName: name.trim() })
-      await finish(newUser, name.trim())
+      await signUp()
     } catch (err) {
       setError(authErrorMessage(err))
       setBusy(false)
     }
   }
 
-  const handleGoogle = async () => {
-    setError("")
-    setBusy(true)
-    try {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    void run(async () => {
+      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password)
+      await updateAuthProfile(newUser, { displayName: name.trim() })
+      await finish(newUser, name.trim())
+    })
+  }
+
+  const handleGoogle = () =>
+    void run(async () => {
       const newUser = await signInWithGoogle()
       await finish(newUser, newUser.displayName ?? "")
-    } catch (err) {
-      setError(authErrorMessage(err))
-      setBusy(false)
-    }
-  }
+    })
 
   return (
     <AuthCard
@@ -81,15 +83,7 @@ function SignupForm() {
           autoComplete={role === "brand" ? "organization" : "name"}
           required
         />
-        <Field
-          id="email"
-          type="email"
-          label="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
+        <Field id="email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         <Field
           id="password"
           type="password"
