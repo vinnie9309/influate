@@ -1,4 +1,4 @@
-import { Check } from "lucide-react"
+import CheckList from "@/components/CheckList"
 import HeroAnimation from "@/components/HeroAnimation"
 import { Button } from "@/components/ui"
 
@@ -20,19 +20,6 @@ const forBrands = [
   "See revenue per creator and per code",
   "Tell creators what you sell and who you want to reach"
 ] as const
-
-function CheckList({ items, iconClass, textClass }: { items: readonly string[]; iconClass: string; textClass: string }) {
-  return (
-    <ul className={`flex flex-col gap-3 text-base leading-normal ${textClass}`}>
-      {items.map((item) => (
-        <li key={item} className="flex gap-2.5">
-          <Check aria-hidden="true" className={`mt-0.5 h-5 w-5 shrink-0 ${iconClass}`} strokeWidth={2.5} />
-          {item}
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 export default function Home() {
   return (

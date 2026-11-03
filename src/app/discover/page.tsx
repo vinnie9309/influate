@@ -1,15 +1,16 @@
 "use client"
 import { useMemo, useState } from "react"
-import { Search } from "lucide-react"
 import { AUDIENCE_AGES, CATEGORIES, PLATFORMS, ROLES, otherRole } from "@/lib/constants"
-import { useAuth, useMyConnections, useSearchProfiles } from "@/lib/queries"
+import { useMyConnections, useSearchProfiles } from "@/lib/queries"
 import type { ConnectionStatus, Profile, Role } from "@/lib/types"
-import RequireAuth from "@/components/RequireAuth"
 import ProfileCard from "@/components/ProfileCard"
-import { ChipToggle, PageTitle, Spinner } from "@/components/ui"
+import RequireProfile from "@/components/RequireProfile"
+import { ChipToggle, PageTitle, SearchInput, SegmentedControl, Select, Spinner } from "@/components/ui"
 
-const selectClasses = "h-12 rounded-xl border border-line-strong bg-white px-3 text-[15px] text-subtle"
-const ROLE_TABS: readonly Role[] = ["creator", "brand"]
+const ROLE_OPTIONS: readonly { value: Role; label: string }[] = [
+  { value: "creator", label: ROLES.creator.plural },
+  { value: "brand", label: ROLES.brand.plural }
+]
 
 function Discover({ me }: { me: Profile }) {
   const [role, setRole] = useState<Role>(otherRole(me.role))
@@ -49,43 +50,31 @@ function Discover({ me }: { me: Profile }) {
 
       <div className="flex flex-col gap-5 rounded-3xl border border-line bg-white p-6 shadow-float">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-xl bg-mist p-1" role="group" aria-label="Show">
-            {ROLE_TABS.map((r) => (
-              <button
-                key={r}
-                type="button"
-                aria-pressed={role === r}
-                onClick={() => setRole(r)}
-                className={`h-10 rounded-lg px-4 text-sm font-bold ${role === r ? "bg-white text-ink shadow-xs" : "text-muted"}`}
-              >
-                {ROLES[r].plural}
-              </button>
-            ))}
-          </div>
-          <label className="flex h-12 min-w-0 flex-[1_1_260px] items-center gap-2.5 rounded-xl border border-line-strong px-3.5">
-            <Search aria-hidden="true" className="h-[18px] w-[18px] text-muted" />
-            <span className="sr-only">Search</span>
-            <input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Search by name, city or keyword"
-              className="min-w-0 flex-1 bg-transparent text-[15px] outline-hidden"
-            />
-          </label>
+          <SegmentedControl label="Show" options={ROLE_OPTIONS} value={role} onChange={setRole} />
+          <SearchInput
+            className="flex-[1_1_260px]"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Search by name, city or keyword"
+          />
           {role === "creator" && (
-            <select aria-label="Platform" value={platform} onChange={(e) => setPlatform(e.target.value)} className={selectClasses}>
-              <option value="">Any platform</option>
-              {PLATFORMS.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
+            <Select
+              aria-label="Platform"
+              className="w-auto"
+              options={PLATFORMS}
+              placeholder="Any platform"
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value)}
+            />
           )}
-          <select aria-label="Audience age" value={age} onChange={(e) => setAge(e.target.value)} className={selectClasses}>
-            <option value="">Any audience age</option>
-            {AUDIENCE_AGES.map((a) => (
-              <option key={a}>{a}</option>
-            ))}
-          </select>
+          <Select
+            aria-label="Audience age"
+            className="w-auto"
+            options={AUDIENCE_AGES}
+            placeholder="Any audience age"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+          />
         </div>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Category">
           <ChipToggle selected={!category} onClick={() => setCategory("")}>
@@ -117,15 +106,6 @@ function Discover({ me }: { me: Profile }) {
   )
 }
 
-function DiscoverForMe() {
-  const { profile } = useAuth()
-  return profile && <Discover me={profile} />
-}
-
 export default function DiscoverPage() {
-  return (
-    <RequireAuth>
-      <DiscoverForMe />
-    </RequireAuth>
-  )
+  return <RequireProfile>{(me) => <Discover me={me} />}</RequireProfile>
 }

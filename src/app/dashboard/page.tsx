@@ -1,10 +1,10 @@
 "use client"
-import { useMemo, type ReactNode } from "react"
+import { useMemo } from "react"
 import Link from "next/link"
+import { useCurrentMonth } from "@/lib/clock"
 import { ROLES, formatMoney, otherRole } from "@/lib/constants"
 import { emptyTotals, sumResults } from "@/lib/data"
 import {
-  useAuth,
   useMyConnections,
   useMyPartnerships,
   useMyResults,
@@ -12,46 +12,44 @@ import {
   useRemoveConnection,
   useRespondToConnection
 } from "@/lib/queries"
-import type { PartnershipResult, Profile } from "@/lib/types"
-import RequireAuth from "@/components/RequireAuth"
-import { Avatar, Button, Card, PageTitle, Spinner, Tag } from "@/components/ui"
-
-function Stat({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <Card className="flex flex-col gap-1 p-5">
-      <span className="text-[13px] text-muted">{label}</span>
-      <strong className="text-[28px] font-extrabold tracking-[-0.02em]">{value}</strong>
-    </Card>
-  )
-}
-
-function SectionCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Card className="flex flex-col gap-4 p-6">
-      <h2 className="text-lg font-bold">{title}</h2>
-      {children}
-    </Card>
-  )
-}
-
-function PersonLink({ uid, profile, children }: { uid: string; profile: Profile | null | undefined; children: ReactNode }) {
-  return (
-    <Link href={`/u/${uid}`} className="flex min-w-0 items-center gap-3 text-ink hover:text-brand">
-      <Avatar name={profile?.displayName} role={profile?.role} size={40} />
-      <span className="flex min-w-0 flex-col">
-        <strong className="truncate text-[15px]">{profile?.displayName ?? "…"}</strong>
-        {children}
-      </span>
-    </Link>
-  )
-}
+import type { Partnership, PartnershipResult, Profile, Totals } from "@/lib/types"
+import DataTable, { type Column } from "@/components/DataTable"
+import PersonLink from "@/components/PersonLink"
+import RequireProfile from "@/components/RequireProfile"
+import SectionCard from "@/components/SectionCard"
+import StatTile from "@/components/StatTile"
+import { Button, PageTitle, Spinner, Tag } from "@/components/ui"
 
 const groupByPartnership = (results: readonly PartnershipResult[]) =>
-  results.reduce((groups, r) => groups.set(r.partnershipId, [...(groups.get(r.partnershipId) ?? []), r]), new Map<string, PartnershipResult[]>())
+  results.reduce(
+    (groups, r) => groups.set(r.partnershipId, [...(groups.get(r.partnershipId) ?? []), r]),
+    new Map<string, PartnershipResult[]>()
+  )
 
-const PARTNERSHIP_COLUMNS = ["Partner", "Campaign", "Code", "Sales", "Revenue", "Creator earnings", "Status"] as const
+type PartnershipRow = Partnership & { partner: Profile | null | undefined; totals: Totals }
+
+const partnershipColumns: readonly Column<PartnershipRow>[] = [
+  { header: "Partner", cell: (p) => p.partner?.displayName ?? "…", className: "font-semibold" },
+  {
+    header: "Campaign",
+    cell: (p) => (
+      <Link href={`/partnerships/${p.id}`} className="font-semibold">
+        {p.title}
+      </Link>
+    )
+  },
+  { header: "Code", cell: (p) => p.code, className: "font-mono" },
+  { header: "Sales", cell: (p) => p.totals.sales },
+  { header: "Revenue", cell: (p) => formatMoney(p.totals.revenue) },
+  { header: "Creator earnings", cell: (p) => formatMoney(p.totals.earnings) },
+  {
+    header: "Status",
+    cell: (p) => <Tag tone={p.status === "active" ? "brand" : "mist"}>{p.status === "active" ? "Active" : "Ended"}</Tag>
+  }
+]
 
 function Dashboard({ me }: { me: Profile }) {
+  const month = useCurrentMonth()
   const connections = useMyConnections(me.uid)
   const partnerships = useMyPartnerships(me.uid)
   const results = useMyResults(me.uid)
@@ -65,18 +63,13 @@ function Dashboard({ me }: { me: Profile }) {
   const valueKey = isCreator ? "earnings" : "revenue"
 
   const stats = useMemo(() => {
-    if (!results.data || !partnerships.data) return null
-    const month = new Date().toISOString().slice(0, 7)
-    const totalsById = new Map(
-      [...groupByPartnership(results.data)].map(([id, rows]) => [id, sumResults(rows)] as const)
-    )
+    if (!results.data) return null
     return {
-      active: partnerships.data.filter((p) => p.status === "active").length,
       month: sumResults(results.data.filter((r) => r.date.startsWith(month)))[valueKey],
       total: sumResults(results.data)[valueKey],
-      totalsById
+      totalsById: new Map([...groupByPartnership(results.data)].map(([id, rows]) => [id, sumResults(rows)] as const))
     }
-  }, [results.data, partnerships.data, valueKey])
+  }, [results.data, month, valueKey])
 
   if (!connections.data || !partnerships.data || !stats) return <Spinner />
 
@@ -84,8 +77,10 @@ function Dashboard({ me }: { me: Profile }) {
   const outgoing = connections.data.filter((c) => c.status === "pending" && c.fromUid === me.uid)
   const accepted = connections.data.filter((c) => c.status === "accepted")
   const lookingFor = ROLES[otherRole(me.role)].plural.toLowerCase()
-  const sortedPartnerships = partnerships.data.toSorted((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
   const greeting = isCreator ? me.displayName.split(" ")[0] : me.displayName
+  const partnershipRows: PartnershipRow[] = partnerships.data
+    .toSorted((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
+    .map((p) => ({ ...p, partner: people[otherUid(p.participants)], totals: stats.totalsById.get(p.id) ?? emptyTotals() }))
 
   return (
     <main className="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 pb-24 pt-4">
@@ -104,10 +99,10 @@ function Dashboard({ me }: { me: Profile }) {
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <Stat label="Active partnerships" value={stats.active} />
-        <Stat label={isCreator ? "Earned this month" : "Revenue this month"} value={formatMoney(stats.month)} />
-        <Stat label={isCreator ? "Earned all time" : "Revenue all time"} value={formatMoney(stats.total)} />
-        <Stat label="Requests waiting for you" value={incoming.length} />
+        <StatTile label="Active partnerships" value={partnerships.data.filter((p) => p.status === "active").length} />
+        <StatTile label={isCreator ? "Earned this month" : "Revenue this month"} value={formatMoney(stats.month)} />
+        <StatTile label={isCreator ? "Earned all time" : "Revenue all time"} value={formatMoney(stats.total)} />
+        <StatTile label="Requests waiting for you" value={incoming.length} />
       </div>
 
       {incoming.length > 0 && (
@@ -133,42 +128,8 @@ function Dashboard({ me }: { me: Profile }) {
       )}
 
       <SectionCard title="Partnerships">
-        {sortedPartnerships.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
-              <thead>
-                <tr className="text-left text-muted">
-                  {PARTNERSHIP_COLUMNS.map((h) => (
-                    <th key={h} scope="col" className="border-b border-line px-2 py-2.5 font-semibold">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedPartnerships.map(({ id, participants, title, code, status }) => {
-                  const { sales, revenue, earnings } = stats.totalsById.get(id) ?? emptyTotals()
-                  return (
-                    <tr key={id} className="border-b border-mist last:border-0">
-                      <td className="px-2 py-3 font-semibold">{people[otherUid(participants)]?.displayName ?? "…"}</td>
-                      <td className="px-2 py-3">
-                        <Link href={`/partnerships/${id}`} className="font-semibold">
-                          {title}
-                        </Link>
-                      </td>
-                      <td className="px-2 py-3 font-mono">{code}</td>
-                      <td className="px-2 py-3">{sales}</td>
-                      <td className="px-2 py-3">{formatMoney(revenue)}</td>
-                      <td className="px-2 py-3">{formatMoney(earnings)}</td>
-                      <td className="px-2 py-3">
-                        <Tag tone={status === "active" ? "brand" : "mist"}>{status === "active" ? "Active" : "Ended"}</Tag>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+        {partnershipRows.length ? (
+          <DataTable columns={partnershipColumns} rows={partnershipRows} rowKey={(p) => p.id} minWidth={640} />
         ) : (
           <p className="text-[15px] text-muted">No partnerships yet. Connect with {lookingFor}, then start a partnership from their profile.</p>
         )}
@@ -216,15 +177,6 @@ function Dashboard({ me }: { me: Profile }) {
   )
 }
 
-function DashboardForMe() {
-  const { profile } = useAuth()
-  return profile && <Dashboard me={profile} />
-}
-
 export default function DashboardPage() {
-  return (
-    <RequireAuth>
-      <DashboardForMe />
-    </RequireAuth>
-  )
+  return <RequireProfile>{(me) => <Dashboard me={me} />}</RequireProfile>
 }

@@ -1,58 +1,17 @@
 "use client"
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ExternalLink, Lock, MapPin } from "lucide-react"
+import { ExternalLink, MapPin } from "lucide-react"
 import { ROLES } from "@/lib/constants"
-import { useAuth, useConnection, useContacts, useProfile } from "@/lib/queries"
-import type { Contacts } from "@/lib/types"
+import { useAuth, useConnection, useProfile } from "@/lib/queries"
 import ConnectPanel from "@/components/ConnectPanel"
+import ContactDetails from "@/components/ContactDetails"
+import DetailTile from "@/components/DetailTile"
 import NewPartnershipForm from "@/components/NewPartnershipForm"
-import { Avatar, Button, Card, PageTitle, Spinner, Tag } from "@/components/ui"
-
-function Detail({ label, children }: { label: string; children: ReactNode }) {
-  if (!children) return null
-  return (
-    <div className="flex flex-col gap-1 rounded-[14px] bg-paper p-3.5">
-      <span className="text-xs text-muted">{label}</span>
-      <strong className="text-[15px]">{children}</strong>
-    </div>
-  )
-}
-
-const contactRows: readonly [label: string, key: keyof Contacts][] = [
-  ["Email", "email"],
-  ["Phone", "phone"],
-  ["Links", "links"]
-]
-
-function ContactDetails({ uid, visible, name }: { uid: string; visible: boolean; name: string }) {
-  const contacts = useContacts(uid, visible)
-
-  if (!visible) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-xl bg-mist px-3.5 py-3 text-sm text-body">
-        <Lock aria-hidden="true" className="h-[18px] w-[18px] shrink-0 text-muted" />
-        Contact details are shared after {name} accepts a connect request.
-      </div>
-    )
-  }
-  if (contacts.isError) return <p className="text-sm text-danger">Couldn&apos;t load contact details. Refresh to try again.</p>
-  if (!contacts.data) return null
-
-  const rows = contactRows.flatMap(([label, key]) => (contacts.data?.[key] ? [[label, contacts.data[key]] as const] : []))
-  if (!rows.length) return <p className="text-sm text-muted">No contact details added yet.</p>
-  return (
-    <dl className="grid gap-3 sm:grid-cols-3">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex flex-col gap-1 rounded-[14px] bg-brand-soft p-3.5">
-          <dt className="text-xs text-brand-dark">{label}</dt>
-          <dd className="wrap-break-word text-[15px] font-bold">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
+import PageMessage from "@/components/PageMessage"
+import SectionCard from "@/components/SectionCard"
+import { Avatar, Button, Card, Spinner, Tag } from "@/components/ui"
 
 const isWebUrl = (value: string) => /^https?:\/\//.test(value)
 
@@ -64,13 +23,7 @@ export default function PublicProfilePage() {
   const [startingPartnership, setStartingPartnership] = useState(false)
 
   if (isPending || loading) return <Spinner />
-  if (!profile) {
-    return (
-      <main className="mx-auto max-w-[820px] px-6 pb-24 pt-4">
-        <PageTitle title="Profile not found">This profile doesn&apos;t exist or was removed.</PageTitle>
-      </main>
-    )
-  }
+  if (!profile) return <PageMessage title="Profile not found">This profile doesn&apos;t exist or was removed.</PageMessage>
 
   const isMe = me?.uid === uid
   const isBrand = profile.role === "brand"
@@ -130,12 +83,12 @@ export default function PublicProfilePage() {
           )}
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
-            <Detail label={isBrand ? "Sells" : "Creates"}>{profile.categories.join(", ")}</Detail>
-            <Detail label="Platforms">{isBrand ? "" : profile.platforms.join(", ")}</Detail>
-            <Detail label={isBrand ? "Target age" : "Audience age"}>{profile.audienceAge}</Detail>
-            <Detail label="Followers">{profile.followers}</Detail>
+            <DetailTile label={isBrand ? "Sells" : "Creates"}>{profile.categories.join(", ")}</DetailTile>
+            <DetailTile label="Platforms">{isBrand ? "" : profile.platforms.join(", ")}</DetailTile>
+            <DetailTile label={isBrand ? "Target age" : "Audience age"}>{profile.audienceAge}</DetailTile>
+            <DetailTile label="Followers">{profile.followers}</DetailTile>
           </div>
-          <Detail label={isBrand ? "Ideal customer" : "Audience"}>{profile.targetAudience}</Detail>
+          <DetailTile label={isBrand ? "Ideal customer" : "Audience"}>{profile.targetAudience}</DetailTile>
           {isWebUrl(profile.website) && (
             <a
               href={profile.website}
@@ -151,26 +104,22 @@ export default function PublicProfilePage() {
       </Card>
 
       {user && (
-        <Card className="flex flex-col gap-4 p-6 sm:p-8">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-bold">Contact details</h2>
-            {isMe && <p className="text-sm text-muted">Only you and people you&apos;re connected with can see these.</p>}
-          </div>
+        <SectionCard
+          title="Contact details"
+          description={isMe && "Only you and people you're connected with can see these."}
+        >
           <ContactDetails uid={uid} visible={isMe || connected} name={profile.displayName} />
-        </Card>
+        </SectionCard>
       )}
 
       {connected && me && (
-        <Card className="flex flex-col gap-4 p-6 sm:p-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-lg font-bold">Work together</h2>
-              <p className="text-sm text-muted">Set up a partnership with an affiliate code to track its results.</p>
-            </div>
-            {!startingPartnership && <Button onClick={() => setStartingPartnership(true)}>New partnership</Button>}
-          </div>
+        <SectionCard
+          title="Work together"
+          description="Set up a partnership with an affiliate code to track its results."
+          action={!startingPartnership && <Button onClick={() => setStartingPartnership(true)}>New partnership</Button>}
+        >
           {startingPartnership && <NewPartnershipForm me={me} other={profile} onCancel={() => setStartingPartnership(false)} />}
-        </Card>
+        </SectionCard>
       )}
     </main>
   )
