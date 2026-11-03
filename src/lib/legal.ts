@@ -1,19 +1,25 @@
-// Details the privacy and cookie policies depend on. Fill in every [BRACKETED] value
-// before launch; the pages highlight anything still in brackets.
+// Facts the privacy and cookie policies depend on. Anything still in [BRACKETS] is shown
+// highlighted on the pages until it is filled in.
 
 export const LEGAL = {
   company: "[COMPANY LEGAL NAME]",
-  registrationNumber: "[COMPANY REGISTRATION NUMBER / ЕИК]",
+  registrationNumber: "[ЕИК / COMPANY REGISTRATION NUMBER]",
   address: "[REGISTERED ADDRESS]",
   privacyEmail: "[PRIVACY CONTACT EMAIL]",
-  /** Cloud Firestore location, from Firebase console → Firestore → Settings (e.g. "eur3 (Europe)"). */
-  firestoreLocation: "[FIRESTORE LOCATION]",
-  supervisoryAuthority: "Commission for Personal Data Protection (Bulgaria), cpdp.bg",
+  /** Supabase dashboard → Project settings → General → Region (must be an EU region). */
+  dataRegion: "[SUPABASE REGION, e.g. Frankfurt, eu-central-1]",
+  /** Supabase dashboard → Database → Backups; depends on the plan. */
+  backupDays: "[BACKUP RETENTION IN DAYS]",
+  /** Names the browser storage key on the cookie page. */
+  supabaseProjectRef: "eqyfewqbbxblacvktbdf",
   minimumAge: 16,
-  /** Days until a deleted account's data is erased from live systems. */
-  deletionDays: 30,
   /** ISO date, formatted per language on the pages. */
   lastUpdated: "2026-11-03"
 } as const
 
+export type LegalKey = keyof typeof LEGAL
+
 export const isPlaceholder = (value: string | number): boolean => typeof value === "string" && /^\[.*\]$/.test(value)
+
+/** Where Supabase keeps the signed-in session in the browser (supabase-js default key). */
+export const SESSION_STORAGE_KEY = `sb-${LEGAL.supabaseProjectRef}-auth-token`

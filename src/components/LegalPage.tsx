@@ -1,22 +1,16 @@
 import type { ReactNode } from "react"
 import { useFormatter, useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
-import { LEGAL, isPlaceholder } from "@/lib/legal"
+import { LEGAL, isPlaceholder, type LegalKey } from "@/lib/legal"
+import type { LegalDocument } from "@/content/legal/types"
+
+// Building blocks for the legal texts in src/content/legal, plus the page that lays them out.
 
 /** A value from LEGAL, highlighted while it is still a placeholder. */
-export function LegalValue({ name }: { name: keyof typeof LEGAL }) {
+export function LegalValue({ name }: { name: LegalKey }) {
   const value = LEGAL[name]
   if (!isPlaceholder(value)) return <>{value}</>
   return <mark className="rounded bg-sun-soft px-1 font-semibold text-sun-ink">{value}</mark>
-}
-
-export function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  return (
-    <section id={id} className="flex scroll-mt-6 flex-col gap-3">
-      <h2 className="text-xl font-extrabold tracking-[-0.02em]">{title}</h2>
-      {children}
-    </section>
-  )
 }
 
 export function P({ children }: { children: ReactNode }) {
@@ -62,24 +56,18 @@ export function Table({ head, rows }: { head: readonly string[]; rows: readonly 
   )
 }
 
-interface LegalPageProps {
-  title: string
-  intro: ReactNode
-  contents: readonly { id: string; title: string }[]
-  children: ReactNode
-}
-
-export default function LegalPage({ title, intro, contents, children }: LegalPageProps) {
+/** Renders a legal document with a table of contents built from its sections. */
+export default function LegalPage({ doc }: { doc: LegalDocument }) {
   const t = useTranslations("Legal")
   const format = useFormatter()
   return (
     <main className="mx-auto flex max-w-[1200px] flex-wrap gap-10 px-6 pb-24 pt-4">
       <aside className="min-w-0 flex-[1_1_220px]">
-        <nav aria-label="On this page" className="flex flex-col gap-1 lg:sticky lg:top-6">
+        <nav aria-label={t("onThisPage")} className="flex flex-col gap-1 lg:sticky lg:top-6">
           <span className="mb-2 text-[13px] font-bold uppercase tracking-[0.08em] text-brand">{t("onThisPage")}</span>
-          {contents.map(({ id, title: label }) => (
+          {doc.sections.map(({ id, title }) => (
             <a key={id} href={`#${id}`} className="rounded-lg px-2 py-1.5 text-sm text-subtle hover:bg-mist hover:text-ink">
-              {label}
+              {title}
             </a>
           ))}
           <div className="mt-4 flex flex-col gap-1 border-t border-line pt-4 text-sm">
@@ -94,11 +82,18 @@ export default function LegalPage({ title, intro, contents, children }: LegalPag
       </aside>
       <article className="flex min-w-0 flex-[999_1_560px] flex-col gap-10 rounded-3xl border border-line bg-white p-6 sm:p-10">
         <header className="flex flex-col gap-3">
-          <h1 className="text-[34px] font-extrabold leading-tight tracking-[-0.03em] sm:text-[40px]">{title}</h1>
-          <p className="text-sm text-muted">{t("lastUpdated", { date: format.dateTime(new Date(LEGAL.lastUpdated), { dateStyle: "long" }) })}</p>
-          <div className="text-base leading-relaxed text-body">{intro}</div>
+          <h1 className="text-[34px] font-extrabold leading-tight tracking-[-0.03em] sm:text-[40px]">{doc.title}</h1>
+          <p className="text-sm text-muted">
+            {t("lastUpdated", { date: format.dateTime(new Date(LEGAL.lastUpdated), { dateStyle: "long" }) })}
+          </p>
+          <div className="text-base leading-relaxed text-body">{doc.intro}</div>
         </header>
-        {children}
+        {doc.sections.map(({ id, title, body }) => (
+          <section key={id} id={id} className="flex scroll-mt-6 flex-col gap-3">
+            <h2 className="text-xl font-extrabold tracking-[-0.02em]">{title}</h2>
+            {body}
+          </section>
+        ))}
       </article>
     </main>
   )
