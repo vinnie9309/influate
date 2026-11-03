@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+import { use } from "react"
+import { setRequestLocale } from "next-intl/server"
+import { Link } from "@/i18n/navigation"
+import type { Locale } from "@/i18n/routing"
 import { LEGAL } from "@/lib/legal"
 import LegalPage, { LegalValue, List, P, Section, Table } from "@/components/LegalPage"
 
@@ -25,7 +28,8 @@ const contents = [
 
 const email = <LegalValue name="privacyEmail" />
 
-export default function PrivacyPage() {
+export default function PrivacyPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  setRequestLocale(use(params).locale)
   return (
     <LegalPage
       title="Privacy policy"

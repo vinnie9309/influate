@@ -1,6 +1,7 @@
-import Link from "next/link"
-import { Search } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
+import { Search } from "lucide-react"
+import { useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
 import { initials } from "@/lib/constants"
 import type { Role } from "@/lib/types"
 
@@ -78,16 +79,23 @@ export function TextAreaField({ id, label, hint, className, ...textarea }: Shell
   )
 }
 
-type SelectProps = { options: readonly string[]; placeholder?: string } & ComponentProps<"select">
+interface SelectProps extends ComponentProps<"select"> {
+  /** Stored values. */
+  options: readonly string[]
+  /** Shown text per value; defaults to the value itself. */
+  optionLabel?: (value: string) => string
+  placeholder?: string
+}
 
 /** A select with an empty first option, styled like the other inputs. Full width unless `className` sets a width. */
-export function Select({ options, placeholder = "Select…", className = "w-full", ...select }: SelectProps) {
+export function Select({ options, optionLabel = (o) => o, placeholder, className = "w-full", ...select }: SelectProps) {
+  const t = useTranslations("Common")
   return (
     <select className={`${inputClasses} h-12 ${className}`} {...select}>
-      <option value="">{placeholder}</option>
+      <option value="">{placeholder ?? t("select")}</option>
       {options.map((o) => (
         <option key={o} value={o}>
-          {o}
+          {optionLabel(o)}
         </option>
       ))}
     </select>
@@ -103,11 +111,12 @@ export function SelectField({ id, label, hint, className, ...select }: ShellProp
 }
 
 /** A search box with a leading icon; `label` is read by screen readers. */
-export function SearchInput({ label = "Search", className = "", ...input }: { label?: string } & ComponentProps<"input">) {
+export function SearchInput({ label, className = "", ...input }: { label?: string } & ComponentProps<"input">) {
+  const t = useTranslations("Common")
   return (
     <label className={`flex h-12 min-w-0 items-center gap-2.5 rounded-xl border border-line-strong bg-white px-3.5 ${className}`}>
       <Search aria-hidden="true" className="h-[18px] w-[18px] text-muted" />
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t("search")}</span>
       <input type="search" className="min-w-0 flex-1 bg-transparent text-[15px] outline-hidden" {...input} />
     </label>
   )
@@ -205,11 +214,12 @@ export function ErrorNote({ children }: { children?: ReactNode }) {
   )
 }
 
-export function Spinner({ label = "Loading…" }: { label?: string }) {
+export function Spinner({ label }: { label?: string }) {
+  const t = useTranslations("Common")
   return (
     <div className="flex items-center justify-center gap-3 py-24 text-muted" role="status">
       <span className="h-5 w-5 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
-      {label}
+      {label ?? t("loading")}
     </div>
   )
 }

@@ -12,7 +12,8 @@ export const LEGAL = {
   minimumAge: 16,
   /** Days until a deleted account's data is erased from live systems. */
   deletionDays: 30,
-  lastUpdated: "3 November 2026"
+  /** ISO date, formatted per language on the pages. */
+  lastUpdated: "2026-11-03"
 } as const
 
 export const isPlaceholder = (value: string | number): boolean => typeof value === "string" && /^\[.*\]$/.test(value)

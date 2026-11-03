@@ -1,6 +1,8 @@
 "use client"
 import { Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { useRouter } from "@/i18n/navigation"
 import { useAuth, useContacts } from "@/lib/queries"
 import type { Contacts, Profile } from "@/lib/types"
 import ChooseRoleForm from "@/components/ChooseRoleForm"
@@ -12,10 +14,10 @@ const noContacts: Contacts = { email: "", phone: "", links: "" }
 
 /** Waits for the private contact details so the form can start from them. */
 function EditProfileForm({ profile }: { profile: Profile }) {
+  const t = useTranslations("ProfileEdit")
   const router = useRouter()
   const params = useSearchParams()
   const contacts = useContacts(profile.uid)
-  const isBrand = profile.role === "brand"
 
   if (contacts.isPending) return <Spinner />
   return (
@@ -25,10 +27,8 @@ function EditProfileForm({ profile }: { profile: Profile }) {
       onSaved={() => router.push(`/u/${profile.uid}`)}
       onCancel={() => router.back()}
       header={
-        <PageTitle eyebrow={params.get("welcome") ? "Welcome to Influate" : "Your profile"} title="Edit profile">
-          {isBrand
-            ? "Tell creators what you sell and who you want to reach. Everything except your contact details is public."
-            : "Show brands what you create and who follows you. Everything except your contact details is public."}
+        <PageTitle eyebrow={params.get("welcome") ? t("welcome") : t("yourProfile")} title={t("title")}>
+          {profile.role === "brand" ? t("introBrand") : t("introCreator")}
         </PageTitle>
       }
     />

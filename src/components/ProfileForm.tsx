@@ -1,6 +1,8 @@
 "use client"
 import { useState, type ChangeEvent, type FormEvent, type ReactNode } from "react"
+import { useTranslations } from "next-intl"
 import { AUDIENCE_AGES, CATEGORIES, FOLLOWER_RANGES, PLATFORMS } from "@/lib/constants"
+import { useOptionLabels } from "@/lib/labels"
 import { useSaveProfile } from "@/lib/queries"
 import type { Contacts, Profile, ProfileFields } from "@/lib/types"
 import SectionCard from "./SectionCard"
@@ -38,6 +40,9 @@ interface ProfileFormProps {
 
 /** Edits a profile's public fields and private contact details. */
 export default function ProfileForm({ profile, initialContacts, header, onSaved, onCancel }: ProfileFormProps) {
+  const t = useTranslations("ProfileEdit")
+  const tCommon = useTranslations("Common")
+  const labels = useOptionLabels()
   const saveProfile = useSaveProfile()
   const isBrand = profile.role === "brand"
   const [form, setForm] = useState<ProfileFields>(() => editableFields(profile))
@@ -54,13 +59,13 @@ export default function ProfileForm({ profile, initialContacts, header, onSaved,
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!form.categories.length) {
-      setError("Pick at least one category so the right people can find you.")
+      setError(t("pickCategory"))
       return
     }
     setError("")
     saveProfile.mutate(
       { uid: profile.uid, fields: trimmed(form), contacts },
-      { onSuccess: onSaved, onError: () => setError("Couldn't save your profile. Please try again.") }
+      { onSuccess: onSaved, onError: () => setError(t("saveError")) }
     )
   }
 
@@ -68,52 +73,48 @@ export default function ProfileForm({ profile, initialContacts, header, onSaved,
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {header}
 
-      <SectionCard title="Basics">
+      <SectionCard title={t("basics")}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="displayName" label={isBrand ? "Company name" : "Name"} value={form.displayName} onChange={set("displayName")} required />
-          <Field id="city" label="City" value={form.city} onChange={set("city")} placeholder="Sofia" />
+          <Field id="displayName" label={isBrand ? t("companyName") : t("name")} value={form.displayName} onChange={set("displayName")} required />
+          <Field id="city" label={t("city")} value={form.city} onChange={set("city")} placeholder={t("cityPlaceholder")} />
         </div>
         <Field
           id="headline"
-          label="Headline"
+          label={t("headline")}
           value={form.headline}
           onChange={set("headline")}
           maxLength={80}
-          placeholder={isBrand ? "Sustainable sportswear made in Bulgaria" : "Home workouts for busy parents"}
+          placeholder={isBrand ? t("headlinePlaceholderBrand") : t("headlinePlaceholderCreator")}
         />
         <TextAreaField
           id="bio"
-          label="About"
+          label={t("about")}
           value={form.bio}
           onChange={set("bio")}
           maxLength={600}
-          placeholder={
-            isBrand
-              ? "What you sell, what makes it different, and what kind of partnerships you're open to."
-              : "What you post, your style, and what kind of partnerships you're open to."
-          }
+          placeholder={isBrand ? t("aboutPlaceholderBrand") : t("aboutPlaceholderCreator")}
         />
-        <Field id="website" type="url" label="Website" value={form.website} onChange={set("website")} placeholder="https://" />
+        <Field id="website" type="url" label={t("website")} value={form.website} onChange={set("website")} placeholder="https://" />
       </SectionCard>
 
-      <SectionCard title={isBrand ? "What you sell" : "What you create"} description="Choose every category that fits. This drives search.">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Categories">
+      <SectionCard title={isBrand ? t("sellTitle") : t("createTitle")} description={t("categoriesHint")}>
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t("categories")}>
           {CATEGORIES.map((c) => (
             <ChipToggle key={c} selected={form.categories.includes(c)} onClick={toggleIn("categories", c)}>
-              {c}
+              {labels.category(c)}
             </ChipToggle>
           ))}
         </div>
       </SectionCard>
 
-      <SectionCard title={isBrand ? "Who you want to reach" : "Your audience"}>
+      <SectionCard title={isBrand ? t("reachTitle") : t("audienceTitle")}>
         {!isBrand && (
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold text-subtle">Platforms</span>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Platforms">
+            <span className="text-sm font-semibold text-subtle">{t("platforms")}</span>
+            <div className="flex flex-wrap gap-2" role="group" aria-label={t("platforms")}>
               {PLATFORMS.map((p) => (
                 <ChipToggle key={p} selected={form.platforms.includes(p)} onClick={toggleIn("platforms", p)}>
-                  {p}
+                  {labels.platform(p)}
                 </ChipToggle>
               ))}
             </div>
@@ -122,7 +123,7 @@ export default function ProfileForm({ profile, initialContacts, header, onSaved,
         <div className="grid gap-4 sm:grid-cols-2">
           <SelectField
             id="audienceAge"
-            label={isBrand ? "Target age" : "Main audience age"}
+            label={isBrand ? t("targetAge") : t("mainAge")}
             options={AUDIENCE_AGES}
             value={form.audienceAge}
             onChange={set("audienceAge")}
@@ -130,39 +131,40 @@ export default function ProfileForm({ profile, initialContacts, header, onSaved,
           {!isBrand && (
             <SelectField
               id="followers"
-              label="Followers (all platforms)"
+              label={t("followers")}
               options={FOLLOWER_RANGES}
+              optionLabel={labels.followers}
               value={form.followers}
               onChange={set("followers")}
-              hint="Self-reported for now"
+              hint={t("followersHint")}
             />
           )}
         </div>
         <Field
           id="targetAudience"
-          label={isBrand ? "Describe your ideal customer" : "Describe your audience"}
+          label={isBrand ? t("idealCustomer") : t("describeAudience")}
           value={form.targetAudience}
           onChange={set("targetAudience")}
           maxLength={160}
-          placeholder={isBrand ? "Active women 25–40 who train at home" : "Mostly women 25–34, interested in fitness and healthy food"}
+          placeholder={isBrand ? t("idealPlaceholder") : t("audiencePlaceholder")}
         />
       </SectionCard>
 
-      <SectionCard title="Contact details" description="Private. Shown only to people whose connect request you accept, and to people who accept yours.">
+      <SectionCard title={t("contactTitle")} description={t("contactHint")}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="contactEmail" type="email" label="Contact email" value={contacts.email} onChange={setContact("email")} />
-          <Field id="phone" type="tel" label="Phone" value={contacts.phone} onChange={setContact("phone")} />
+          <Field id="contactEmail" type="email" label={t("contactEmail")} value={contacts.email} onChange={setContact("email")} />
+          <Field id="phone" type="tel" label={t("phone")} value={contacts.phone} onChange={setContact("phone")} />
         </div>
-        <Field id="links" label="Social links" value={contacts.links} onChange={setContact("links")} placeholder="instagram.com/you, tiktok.com/@you" />
+        <Field id="links" label={t("links")} value={contacts.links} onChange={setContact("links")} placeholder={t("linksPlaceholder")} />
       </SectionCard>
 
       <ErrorNote>{error}</ErrorNote>
       <div className="flex flex-wrap gap-3">
         <Button type="submit" size="lg" disabled={saveProfile.isPending}>
-          {saveProfile.isPending ? "Saving…" : "Save profile"}
+          {saveProfile.isPending ? t("saving") : t("save")}
         </Button>
         <Button variant="ghost" size="lg" onClick={onCancel}>
-          Cancel
+          {tCommon("cancel")}
         </Button>
       </div>
     </form>

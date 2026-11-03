@@ -1,9 +1,10 @@
 "use client"
 import { useState } from "react"
-import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ExternalLink, MapPin } from "lucide-react"
-import { ROLES } from "@/lib/constants"
+import { useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
+import { useOptionLabels } from "@/lib/labels"
 import { useAuth, useConnection, useProfile } from "@/lib/queries"
 import ConnectPanel from "@/components/ConnectPanel"
 import ContactDetails from "@/components/ContactDetails"
@@ -16,6 +17,9 @@ import { Avatar, Button, Card, Spinner, Tag } from "@/components/ui"
 const isWebUrl = (value: string) => /^https?:\/\//.test(value)
 
 export default function PublicProfilePage() {
+  const t = useTranslations("Profile")
+  const tRoles = useTranslations("Roles")
+  const labels = useOptionLabels()
   const { uid } = useParams<{ uid: string }>()
   const { user, profile: me, loading } = useAuth()
   const { data: profile, isPending } = useProfile(uid)
@@ -23,7 +27,7 @@ export default function PublicProfilePage() {
   const [startingPartnership, setStartingPartnership] = useState(false)
 
   if (isPending || loading) return <Spinner />
-  if (!profile) return <PageMessage title="Profile not found">This profile doesn&apos;t exist or was removed.</PageMessage>
+  if (!profile) return <PageMessage title={t("notFoundTitle")}>{t("notFoundText")}</PageMessage>
 
   const isMe = me?.uid === uid
   const isBrand = profile.role === "brand"
@@ -47,7 +51,7 @@ export default function PublicProfilePage() {
               <div className="flex flex-col gap-1 pb-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-[22px] font-extrabold tracking-[-0.02em]">{profile.displayName}</h1>
-                  <Tag tone={isBrand ? "dark" : "brand"}>{ROLES[profile.role].label}</Tag>
+                  <Tag tone={isBrand ? "dark" : "brand"}>{tRoles("label", { role: profile.role })}</Tag>
                 </div>
                 {profile.city && (
                   <span className="flex items-center gap-1 text-sm text-muted">
@@ -60,12 +64,12 @@ export default function PublicProfilePage() {
             <div className="flex max-w-full flex-1 justify-end sm:flex-none">
               {isMe ? (
                 <Button href="/profile/edit" variant="outline">
-                  Edit profile
+                  {t("editProfile")}
                 </Button>
               ) : me ? (
                 <ConnectPanel me={me} other={profile} connection={connection} />
               ) : (
-                <Button href={`/login?next=/u/${uid}`}>Log in to connect</Button>
+                <Button href={`/login?next=/u/${uid}`}>{t("logInToConnect")}</Button>
               )}
             </div>
           </div>
@@ -74,21 +78,23 @@ export default function PublicProfilePage() {
           {profile.bio && <p className="whitespace-pre-line text-[15px] leading-relaxed text-body">{profile.bio}</p>}
           {isMe && !profile.categories.length && (
             <p className="rounded-xl bg-sun-soft px-4 py-3 text-sm font-medium text-sun-ink">
-              Your profile is almost empty.{" "}
-              <Link href="/profile/edit" className="underline">
-                Add your details
-              </Link>{" "}
-              so the right people can find you.
+              {t.rich("emptyNotice", {
+                link: (chunks) => (
+                  <Link href="/profile/edit" className="underline">
+                    {chunks}
+                  </Link>
+                )
+              })}
             </p>
           )}
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
-            <DetailTile label={isBrand ? "Sells" : "Creates"}>{profile.categories.join(", ")}</DetailTile>
-            <DetailTile label="Platforms">{isBrand ? "" : profile.platforms.join(", ")}</DetailTile>
-            <DetailTile label={isBrand ? "Target age" : "Audience age"}>{profile.audienceAge}</DetailTile>
-            <DetailTile label="Followers">{profile.followers}</DetailTile>
+            <DetailTile label={isBrand ? t("sells") : t("creates")}>{profile.categories.map(labels.category).join(", ")}</DetailTile>
+            <DetailTile label={t("platforms")}>{isBrand ? "" : profile.platforms.map(labels.platform).join(", ")}</DetailTile>
+            <DetailTile label={isBrand ? t("targetAge") : t("audienceAge")}>{profile.audienceAge}</DetailTile>
+            <DetailTile label={t("followers")}>{profile.followers && labels.followers(profile.followers)}</DetailTile>
           </div>
-          <DetailTile label={isBrand ? "Ideal customer" : "Audience"}>{profile.targetAudience}</DetailTile>
+          <DetailTile label={isBrand ? t("idealCustomer") : t("audience")}>{profile.targetAudience}</DetailTile>
           {isWebUrl(profile.website) && (
             <a
               href={profile.website}
@@ -104,19 +110,16 @@ export default function PublicProfilePage() {
       </Card>
 
       {user && (
-        <SectionCard
-          title="Contact details"
-          description={isMe && "Only you and people you're connected with can see these."}
-        >
+        <SectionCard title={t("contactDetails")} description={isMe && t("contactsOwnerNote")}>
           <ContactDetails uid={uid} visible={isMe || connected} name={profile.displayName} />
         </SectionCard>
       )}
 
       {connected && me && (
         <SectionCard
-          title="Work together"
-          description="Set up a partnership with an affiliate code to track its results."
-          action={!startingPartnership && <Button onClick={() => setStartingPartnership(true)}>New partnership</Button>}
+          title={t("workTogether")}
+          description={t("workTogetherText")}
+          action={!startingPartnership && <Button onClick={() => setStartingPartnership(true)}>{t("newPartnership")}</Button>}
         >
           {startingPartnership && <NewPartnershipForm me={me} other={profile} onCancel={() => setStartingPartnership(false)} />}
         </SectionCard>

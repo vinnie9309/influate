@@ -1,9 +1,10 @@
 "use client"
-import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Trash2 } from "lucide-react"
-import { ROLES, formatMoney } from "@/lib/constants"
+import { useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
 import { sumResults } from "@/lib/data"
+import { useMoney } from "@/lib/format"
 import { useDeleteResult, usePartnership, usePartnershipResults, useProfile, useSetPartnershipStatus } from "@/lib/queries"
 import type { Partnership, PartnershipResult, Profile } from "@/lib/types"
 import AddResultForm from "@/components/AddResultForm"
@@ -16,6 +17,10 @@ import StatTile from "@/components/StatTile"
 import { Button, Card, Spinner, Tag } from "@/components/ui"
 
 function PartnershipView({ partnership, me }: { partnership: Partnership; me: Profile }) {
+  const t = useTranslations("Partnership")
+  const tRoles = useTranslations("Roles")
+  const tStatus = useTranslations("Status")
+  const money = useMoney()
   const otherUid = partnership.participants.find((p) => p !== me.uid) ?? ""
   const { data: partner } = useProfile(otherUid)
   const { data: results = [] } = usePartnershipResults(partnership, me.uid)
@@ -27,11 +32,11 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
   const active = partnership.status === "active"
 
   const historyColumns: readonly Column<PartnershipResult>[] = [
-    { header: "Date", cell: (r) => r.date, className: "font-semibold" },
-    { header: "Sales", cell: (r) => r.sales },
-    { header: "Revenue", cell: (r) => formatMoney(r.revenue) },
-    { header: "Earnings", cell: (r) => formatMoney(r.earnings) },
-    { header: "Note", cell: (r) => r.note, className: "text-muted" },
+    { header: t("date"), cell: (r) => r.date, className: "font-semibold" },
+    { header: t("sales"), cell: (r) => r.sales },
+    { header: t("revenue"), cell: (r) => money(r.revenue) },
+    { header: t("earnings"), cell: (r) => money(r.earnings) },
+    { header: t("note"), cell: (r) => r.note, className: "text-muted" },
     {
       header: "",
       className: "text-right",
@@ -39,7 +44,7 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
         r.createdBy === me.uid && (
           <button
             type="button"
-            aria-label={`Delete result from ${r.date}`}
+            aria-label={t("deleteResult", { date: r.date })}
             disabled={deleteResult.isPending}
             onClick={() => deleteResult.mutate(r.id)}
             className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger"
@@ -53,17 +58,17 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
   return (
     <main className="mx-auto flex max-w-[960px] flex-col gap-5 px-6 pb-24 pt-4">
       <Link href="/dashboard" className="self-start text-sm font-semibold">
-        ← Dashboard
+        {t("back")}
       </Link>
       <Card className="flex flex-col gap-5 p-6 shadow-float sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[28px] font-extrabold tracking-[-0.03em]">{partnership.title}</h1>
-              <Tag tone={active ? "brand" : "mist"}>{active ? "Active" : "Ended"}</Tag>
+              <Tag tone={active ? "brand" : "mist"}>{tStatus("label", { status: partnership.status })}</Tag>
             </div>
             <PersonLink uid={otherUid} profile={partner} size={36}>
-              {partner && <span className="text-sm text-muted">{ROLES[partner.role].label}</span>}
+              {partner && <span className="text-sm text-muted">{tRoles("label", { role: partner.role })}</span>}
             </PersonLink>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -76,32 +81,29 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
               disabled={setStatus.isPending}
               onClick={() => setStatus.mutate({ id: partnership.id, status: active ? "ended" : "active" })}
             >
-              {active ? "End partnership" : "Reactivate"}
+              {active ? t("end") : t("reactivate")}
             </Button>
           </div>
         </div>
         {partnership.terms && <p className="rounded-xl bg-paper px-4 py-3 text-[15px] text-body">{partnership.terms}</p>}
         <div className="grid grid-cols-3 gap-3">
-          <StatTile variant="subtle" label="Sales" value={totals.sales} />
-          <StatTile variant="subtle" label="Revenue" value={formatMoney(totals.revenue)} />
-          <StatTile variant="subtle" label="Creator earnings" value={formatMoney(totals.earnings)} />
+          <StatTile variant="subtle" label={t("sales")} value={totals.sales} />
+          <StatTile variant="subtle" label={t("revenue")} value={money(totals.revenue)} />
+          <StatTile variant="subtle" label={t("creatorEarnings")} value={money(totals.earnings)} />
         </div>
       </Card>
 
       {active && (
-        <SectionCard
-          title="Log results"
-          description={`Enter sales made with ${partnership.code}, for example from your shop's discount report. Both sides see every entry.`}
-        >
+        <SectionCard title={t("logTitle")} description={t("logText", { code: partnership.code })}>
           <AddResultForm partnership={partnership} uid={me.uid} />
         </SectionCard>
       )}
 
-      <SectionCard title="History">
+      <SectionCard title={t("history")}>
         {history.length ? (
           <DataTable columns={historyColumns} rows={history} rowKey={(r) => r.id} />
         ) : (
-          <p className="text-[15px] text-muted">No results logged yet.</p>
+          <p className="text-[15px] text-muted">{t("noResults")}</p>
         )}
       </SectionCard>
     </main>
@@ -109,12 +111,13 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
 }
 
 function PartnershipPage({ me }: { me: Profile }) {
+  const t = useTranslations("Partnership")
   const { id } = useParams<{ id: string }>()
   // A denied read means it isn't the viewer's partnership: shown as not found.
   const { data: partnership, isPending } = usePartnership(id)
 
   if (isPending) return <Spinner />
-  if (!partnership) return <PageMessage title="Partnership not found">It doesn&apos;t exist, or you&apos;re not part of it.</PageMessage>
+  if (!partnership) return <PageMessage title={t("notFoundTitle")}>{t("notFoundText")}</PageMessage>
   return <PartnershipView partnership={partnership} me={me} />
 }
 

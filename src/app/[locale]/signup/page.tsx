@@ -1,19 +1,22 @@
 "use client"
 import { Suspense, useState, type FormEvent } from "react"
-import Link from "next/link"
-import { redirect, useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { createUserWithEmailAndPassword, updateProfile as updateAuthProfile, type User } from "firebase/auth"
 import { useQueryClient } from "@tanstack/react-query"
+import { Link, redirect, useRouter } from "@/i18n/navigation"
 import { auth } from "@/lib/firebase"
 import { getProfile } from "@/lib/data"
 import { LEGAL } from "@/lib/legal"
 import { keys, useAuth, useCreateProfile } from "@/lib/queries"
 import type { Role } from "@/lib/types"
-import AuthCard, { GoogleButton, authErrorMessage, signInWithGoogle } from "@/components/AuthCard"
+import AuthCard, { GoogleButton, authErrorKey, signInWithGoogle, type AuthErrorKey } from "@/components/AuthCard"
 import RolePicker from "@/components/RolePicker"
 import { Button, ErrorNote, Field } from "@/components/ui"
 
 function SignupForm() {
+  const t = useTranslations("Auth")
+  const locale = useLocale()
   const params = useSearchParams()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -23,11 +26,11 @@ function SignupForm() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [error, setError] = useState<AuthErrorKey | null>(null)
   const [busy, setBusy] = useState(false)
 
   // Already signed in (and not mid-signup): nothing to do here.
-  if (!loading && user && !busy) redirect("/dashboard")
+  if (!loading && user && !busy) redirect({ href: "/dashboard", locale })
 
   const finish = async (newUser: User, displayName: string) => {
     const existing = await queryClient.fetchQuery({ queryKey: keys.profile(newUser.uid), queryFn: () => getProfile(newUser.uid) })
@@ -36,12 +39,12 @@ function SignupForm() {
   }
 
   const run = async (signUp: () => Promise<void>) => {
-    setError("")
+    setError(null)
     setBusy(true)
     try {
       await signUp()
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(authErrorKey(err))
       setBusy(false)
     }
   }
@@ -63,13 +66,13 @@ function SignupForm() {
 
   return (
     <AuthCard
-      title="Create your profile"
-      subtitle="Free to join. You can fill in the details after signing up."
+      title={t("signupTitle")}
+      subtitle={t("signupSubtitle")}
       footer={
         <>
-          Already have an account?{" "}
+          {t("haveAccount")}{" "}
           <Link href="/login" className="font-semibold text-brand underline">
-            Log in
+            {t("logIn")}
           </Link>
         </>
       }
@@ -78,36 +81,39 @@ function SignupForm() {
         <RolePicker value={role} onChange={setRole} />
         <Field
           id="name"
-          label={role === "brand" ? "Company name" : "Your name"}
+          label={role === "brand" ? t("companyName") : t("yourName")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete={role === "brand" ? "organization" : "name"}
           required
         />
-        <Field id="email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+        <Field id="email" type="email" label={t("email")} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         <Field
           id="password"
           type="password"
-          label="Password"
-          hint="At least 6 characters"
+          label={t("password")}
+          hint={t("passwordHint")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
           minLength={6}
           required
         />
-        <ErrorNote>{error}</ErrorNote>
+        <ErrorNote>{error && t(`errors.${error}`)}</ErrorNote>
         <Button type="submit" size="lg" disabled={busy}>
-          {busy ? "Creating account…" : "Create account"}
+          {busy ? t("creating") : t("createAccount")}
         </Button>
       </form>
       <GoogleButton onClick={handleGoogle} disabled={busy} />
       <p className="text-center text-[13px] leading-relaxed text-muted">
-        By creating an account you confirm you are at least {LEGAL.minimumAge} and have read our{" "}
-        <Link href="/privacy" className="underline">
-          privacy policy
-        </Link>
-        .
+        {t.rich("ageNotice", {
+          age: LEGAL.minimumAge,
+          link: (chunks) => (
+            <Link href="/privacy" className="underline">
+              {chunks}
+            </Link>
+          )
+        })}
       </p>
     </AuthCard>
   )

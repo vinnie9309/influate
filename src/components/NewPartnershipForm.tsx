@@ -1,6 +1,7 @@
 "use client"
 import { useState, type FormEvent } from "react"
-import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { useRouter } from "@/i18n/navigation"
 import { useCreatePartnership } from "@/lib/queries"
 import type { Profile } from "@/lib/types"
 import { Button, ErrorNote, Field } from "./ui"
@@ -12,6 +13,8 @@ interface NewPartnershipFormProps {
 }
 
 export default function NewPartnershipForm({ me, other, onCancel }: NewPartnershipFormProps) {
+  const t = useTranslations("NewPartnership")
+  const tCommon = useTranslations("Common")
   const router = useRouter()
   const createPartnership = useCreatePartnership()
   const [title, setTitle] = useState("")
@@ -31,34 +34,27 @@ export default function NewPartnershipForm({ me, other, onCancel }: NewPartnersh
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="title" label="Campaign name" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Spring collection" required />
+        <Field id="title" label={t("campaign")} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("campaignPlaceholder")} required />
         <Field
           id="code"
-          label="Affiliate code"
+          label={t("code")}
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="MAYA10"
           pattern="[A-Za-z0-9_\-]{2,24}"
-          title="2–24 letters, numbers, - or _"
+          title={t("codeTitle")}
           required
         />
       </div>
-      <Field
-        id="terms"
-        label="Terms"
-        value={terms}
-        onChange={(e) => setTerms(e.target.value)}
-        maxLength={200}
-        placeholder="10% off for followers, 15% commission per sale"
-      />
-      <ErrorNote>{createPartnership.isError && "Couldn't create the partnership. Please try again."}</ErrorNote>
+      <Field id="terms" label={t("terms")} value={terms} onChange={(e) => setTerms(e.target.value)} maxLength={200} placeholder={t("termsPlaceholder")} />
+      <ErrorNote>{createPartnership.isError && t("error")}</ErrorNote>
       <div className="flex gap-2">
         <Button type="submit" disabled={createPartnership.isPending}>
-          Start partnership
+          {t("start")}
         </Button>
         {onCancel && (
           <Button variant="ghost" onClick={onCancel}>
-            Cancel
+            {tCommon("cancel")}
           </Button>
         )}
       </div>

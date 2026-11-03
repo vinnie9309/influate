@@ -1,33 +1,36 @@
 "use client"
 import { Suspense, useState, type FormEvent } from "react"
-import Link from "next/link"
-import { redirect, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { signInWithEmailAndPassword } from "firebase/auth"
+import { Link, redirect } from "@/i18n/navigation"
 import { auth } from "@/lib/firebase"
 import { useAuth } from "@/lib/queries"
-import AuthCard, { GoogleButton, authErrorMessage, signInWithGoogle } from "@/components/AuthCard"
+import AuthCard, { GoogleButton, authErrorKey, signInWithGoogle, type AuthErrorKey } from "@/components/AuthCard"
 import { Button, ErrorNote, Field } from "@/components/ui"
 
 /** Only follow local paths, never an absolute URL from the query string. */
 const safeNext = (next: string | null): string => (next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard")
 
 function LoginForm() {
+  const t = useTranslations("Auth")
+  const locale = useLocale()
   const params = useSearchParams()
   const { user, loading } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [error, setError] = useState<AuthErrorKey | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (!loading && user) redirect(safeNext(params.get("next")))
+  if (!loading && user) redirect({ href: safeNext(params.get("next")), locale })
 
   const run = async (signIn: () => Promise<unknown>) => {
-    setError("")
+    setError(null)
     setBusy(true)
     try {
       await signIn()
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(authErrorKey(err))
       setBusy(false)
     }
   }
@@ -39,31 +42,31 @@ function LoginForm() {
 
   return (
     <AuthCard
-      title="Welcome back"
-      subtitle="Log in to see your partnerships and requests."
+      title={t("loginTitle")}
+      subtitle={t("loginSubtitle")}
       footer={
         <>
-          New to Influate?{" "}
+          {t("newHere")}{" "}
           <Link href="/signup" className="font-semibold text-brand underline">
-            Create a profile
+            {t("createProfile")}
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Field id="email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+        <Field id="email" type="email" label={t("email")} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         <Field
           id="password"
           type="password"
-          label="Password"
+          label={t("password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
           required
         />
-        <ErrorNote>{error}</ErrorNote>
+        <ErrorNote>{error && t(`errors.${error}`)}</ErrorNote>
         <Button type="submit" size="lg" disabled={busy}>
-          {busy ? "Logging in…" : "Log in"}
+          {busy ? t("loggingIn") : t("logIn")}
         </Button>
       </form>
       <GoogleButton onClick={() => void run(signInWithGoogle)} disabled={busy} />

@@ -1,5 +1,6 @@
-import Link from "next/link"
 import type { ReactNode } from "react"
+import { useFormatter, useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
 import { LEGAL, isPlaceholder } from "@/lib/legal"
 
 /** A value from LEGAL, highlighted while it is still a placeholder. */
@@ -69,11 +70,13 @@ interface LegalPageProps {
 }
 
 export default function LegalPage({ title, intro, contents, children }: LegalPageProps) {
+  const t = useTranslations("Legal")
+  const format = useFormatter()
   return (
     <main className="mx-auto flex max-w-[1200px] flex-wrap gap-10 px-6 pb-24 pt-4">
       <aside className="min-w-0 flex-[1_1_220px]">
         <nav aria-label="On this page" className="flex flex-col gap-1 lg:sticky lg:top-6">
-          <span className="mb-2 text-[13px] font-bold uppercase tracking-[0.08em] text-brand">On this page</span>
+          <span className="mb-2 text-[13px] font-bold uppercase tracking-[0.08em] text-brand">{t("onThisPage")}</span>
           {contents.map(({ id, title: label }) => (
             <a key={id} href={`#${id}`} className="rounded-lg px-2 py-1.5 text-sm text-subtle hover:bg-mist hover:text-ink">
               {label}
@@ -81,10 +84,10 @@ export default function LegalPage({ title, intro, contents, children }: LegalPag
           ))}
           <div className="mt-4 flex flex-col gap-1 border-t border-line pt-4 text-sm">
             <Link href="/privacy" className="px-2 py-1 text-subtle hover:text-ink">
-              Privacy policy
+              {t("privacy")}
             </Link>
             <Link href="/cookies" className="px-2 py-1 text-subtle hover:text-ink">
-              Cookie policy
+              {t("cookies")}
             </Link>
           </div>
         </nav>
@@ -92,7 +95,7 @@ export default function LegalPage({ title, intro, contents, children }: LegalPag
       <article className="flex min-w-0 flex-[999_1_560px] flex-col gap-10 rounded-3xl border border-line bg-white p-6 sm:p-10">
         <header className="flex flex-col gap-3">
           <h1 className="text-[34px] font-extrabold leading-tight tracking-[-0.03em] sm:text-[40px]">{title}</h1>
-          <p className="text-sm text-muted">Last updated {LEGAL.lastUpdated}</p>
+          <p className="text-sm text-muted">{t("lastUpdated", { date: format.dateTime(new Date(LEGAL.lastUpdated), { dateStyle: "long" }) })}</p>
           <div className="text-base leading-relaxed text-body">{intro}</div>
         </header>
         {children}

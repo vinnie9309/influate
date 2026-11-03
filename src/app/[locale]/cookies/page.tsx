@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+import { use } from "react"
+import { setRequestLocale } from "next-intl/server"
+import { Link } from "@/i18n/navigation"
+import type { Locale } from "@/i18n/routing"
 import LegalPage, { LegalValue, List, P, Section, Table } from "@/components/LegalPage"
 
 export const metadata: Metadata = {
@@ -16,7 +19,8 @@ const contents = [
   { id: "changes", title: "Changes" }
 ] as const
 
-export default function CookiesPage() {
+export default function CookiesPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  setRequestLocale(use(params).locale)
   return (
     <LegalPage
       title="Cookie policy"

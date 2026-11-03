@@ -1,18 +1,21 @@
 "use client"
 import { useMemo, useState } from "react"
-import { AUDIENCE_AGES, CATEGORIES, PLATFORMS, ROLES, otherRole } from "@/lib/constants"
+import { useTranslations } from "next-intl"
+import { AUDIENCE_AGES, CATEGORIES, PLATFORMS, otherRole } from "@/lib/constants"
+import { useOptionLabels } from "@/lib/labels"
 import { useMyConnections, useSearchProfiles } from "@/lib/queries"
 import type { ConnectionStatus, Profile, Role } from "@/lib/types"
 import ProfileCard from "@/components/ProfileCard"
 import RequireProfile from "@/components/RequireProfile"
 import { ChipToggle, PageTitle, SearchInput, SegmentedControl, Select, Spinner } from "@/components/ui"
 
-const ROLE_OPTIONS: readonly { value: Role; label: string }[] = [
-  { value: "creator", label: ROLES.creator.plural },
-  { value: "brand", label: ROLES.brand.plural }
-]
+const ROLE_VALUES: readonly Role[] = ["creator", "brand"]
 
 function Discover({ me }: { me: Profile }) {
+  const t = useTranslations("Discover")
+  const tRoles = useTranslations("Roles")
+  const tCommon = useTranslations("Common")
+  const labels = useOptionLabels()
   const [role, setRole] = useState<Role>(otherRole(me.role))
   const [category, setCategory] = useState("")
   const [text, setText] = useState("")
@@ -40,55 +43,51 @@ function Discover({ me }: { me: Profile }) {
       .toSorted((a, b) => (b.updatedAt?.seconds ?? 0) - (a.updatedAt?.seconds ?? 0))
   }, [search.data, text, platform, age, me.uid])
 
-  const plural = ROLES[role].plural.toLowerCase()
+  const roleOptions = ROLE_VALUES.map((value) => ({ value, label: tRoles("plural", { role: value }) }))
 
   return (
     <main className="mx-auto flex max-w-[1200px] flex-col gap-8 px-6 pb-24 pt-4">
-      <PageTitle eyebrow="Discover" title={`Find ${plural} that fit`}>
-        Filter by category, audience and platform, then open a profile to send a connect request.
+      <PageTitle eyebrow={t("eyebrow")} title={t("title", { role })}>
+        {t("intro")}
       </PageTitle>
 
       <div className="flex flex-col gap-5 rounded-3xl border border-line bg-white p-6 shadow-float">
         <div className="flex flex-wrap items-center gap-3">
-          <SegmentedControl label="Show" options={ROLE_OPTIONS} value={role} onChange={setRole} />
-          <SearchInput
-            className="flex-[1_1_260px]"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Search by name, city or keyword"
-          />
+          <SegmentedControl label={t("show")} options={roleOptions} value={role} onChange={setRole} />
+          <SearchInput className="flex-[1_1_260px]" value={text} onChange={(e) => setText(e.target.value)} placeholder={t("searchPlaceholder")} />
           {role === "creator" && (
             <Select
-              aria-label="Platform"
+              aria-label={t("platform")}
               className="w-auto"
               options={PLATFORMS}
-              placeholder="Any platform"
+              optionLabel={labels.platform}
+              placeholder={t("anyPlatform")}
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
             />
           )}
           <Select
-            aria-label="Audience age"
+            aria-label={t("audienceAge")}
             className="w-auto"
             options={AUDIENCE_AGES}
-            placeholder="Any audience age"
+            placeholder={t("anyAge")}
             value={age}
             onChange={(e) => setAge(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Category">
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t("category")}>
           <ChipToggle selected={!category} onClick={() => setCategory("")}>
-            All
+            {t("all")}
           </ChipToggle>
           {CATEGORIES.map((c) => (
             <ChipToggle key={c} selected={category === c} onClick={() => setCategory(category === c ? "" : c)}>
-              {c}
+              {labels.category(c)}
             </ChipToggle>
           ))}
         </div>
 
         {!filtered ? (
-          <Spinner label="Searching…" />
+          <Spinner label={tCommon("searching")} />
         ) : filtered.length ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
             {filtered.map((p) => (
@@ -97,8 +96,8 @@ function Discover({ me }: { me: Profile }) {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <p className="text-lg font-bold">No {plural} match yet</p>
-            <p className="max-w-md text-[15px] text-muted">Try another category or clear the filters. New profiles join every day.</p>
+            <p className="text-lg font-bold">{t("emptyTitle", { role })}</p>
+            <p className="max-w-md text-[15px] text-muted">{t("emptyText")}</p>
           </div>
         )}
       </div>

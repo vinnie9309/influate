@@ -1,13 +1,20 @@
-import Link from "next/link"
+import { useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
+import { useOptionLabels } from "@/lib/labels"
 import type { ConnectionStatus, Profile } from "@/lib/types"
 import { Avatar, Tag } from "./ui"
 
-const statusLabels: Partial<Record<ConnectionStatus, string>> = { accepted: "Connected", pending: "Request pending" }
+const STATUS_KEYS: Partial<Record<ConnectionStatus, "connected" | "pending">> = { accepted: "connected", pending: "pending" }
 
 export default function ProfileCard({ profile, connectionStatus }: { profile: Profile; connectionStatus?: ConnectionStatus }) {
+  const t = useTranslations("ProfileCard")
+  const labels = useOptionLabels()
   const { uid, displayName, role, headline, categories, platforms, city, audienceAge, followers } = profile
-  const meta = [headline || categories[0], city].filter(Boolean).join(" · ")
-  const label = connectionStatus && statusLabels[connectionStatus]
+  const firstCategory = categories[0]
+  const meta = [headline || (firstCategory && labels.category(firstCategory)), city].filter(Boolean).join(" · ")
+  const statusKey = connectionStatus && STATUS_KEYS[connectionStatus]
+  const tags = role === "creator" ? platforms.map(labels.platform) : categories.map(labels.category)
+
   return (
     <Link
       href={`/u/${uid}`}
@@ -17,19 +24,19 @@ export default function ProfileCard({ profile, connectionStatus }: { profile: Pr
         <Avatar name={displayName} role={role} />
         <div className="flex min-w-0 flex-col">
           <strong className="truncate text-base group-hover:text-brand">{displayName}</strong>
-          <span className="truncate text-sm text-muted">{meta || "Profile in progress"}</span>
+          <span className="truncate text-sm text-muted">{meta || t("inProgress")}</span>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {(role === "creator" ? platforms : categories).slice(0, 3).map((p) => (
-          <Tag key={p}>{p}</Tag>
+        {tags.slice(0, 3).map((tag) => (
+          <Tag key={tag}>{tag}</Tag>
         ))}
-        {audienceAge && <Tag>Audience {audienceAge}</Tag>}
-        {followers && <Tag>{followers}</Tag>}
+        {audienceAge && <Tag>{t("audience", { age: audienceAge })}</Tag>}
+        {followers && <Tag>{labels.followers(followers)}</Tag>}
       </div>
-      {label && (
+      {statusKey && (
         <span className="mt-auto self-start">
-          <Tag tone={connectionStatus === "accepted" ? "brand" : "sun"}>{label}</Tag>
+          <Tag tone={statusKey === "connected" ? "brand" : "sun"}>{t(statusKey)}</Tag>
         </span>
       )}
     </Link>

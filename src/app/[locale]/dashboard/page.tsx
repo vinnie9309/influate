@@ -1,9 +1,11 @@
 "use client"
 import { useMemo } from "react"
-import Link from "next/link"
+import { useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
 import { useCurrentMonth } from "@/lib/clock"
-import { ROLES, formatMoney, otherRole } from "@/lib/constants"
+import { otherRole } from "@/lib/constants"
 import { emptyTotals, sumResults } from "@/lib/data"
+import { useMoney } from "@/lib/format"
 import {
   useMyConnections,
   useMyPartnerships,
@@ -28,27 +30,11 @@ const groupByPartnership = (results: readonly PartnershipResult[]) =>
 
 type PartnershipRow = Partnership & { partner: Profile | null | undefined; totals: Totals }
 
-const partnershipColumns: readonly Column<PartnershipRow>[] = [
-  { header: "Partner", cell: (p) => p.partner?.displayName ?? "…", className: "font-semibold" },
-  {
-    header: "Campaign",
-    cell: (p) => (
-      <Link href={`/partnerships/${p.id}`} className="font-semibold">
-        {p.title}
-      </Link>
-    )
-  },
-  { header: "Code", cell: (p) => p.code, className: "font-mono" },
-  { header: "Sales", cell: (p) => p.totals.sales },
-  { header: "Revenue", cell: (p) => formatMoney(p.totals.revenue) },
-  { header: "Creator earnings", cell: (p) => formatMoney(p.totals.earnings) },
-  {
-    header: "Status",
-    cell: (p) => <Tag tone={p.status === "active" ? "brand" : "mist"}>{p.status === "active" ? "Active" : "Ended"}</Tag>
-  }
-]
-
 function Dashboard({ me }: { me: Profile }) {
+  const t = useTranslations("Dashboard")
+  const tStatus = useTranslations("Status")
+  const tConnect = useTranslations("Connect")
+  const money = useMoney()
   const month = useCurrentMonth()
   const connections = useMyConnections(me.uid)
   const partnerships = useMyPartnerships(me.uid)
@@ -61,6 +47,7 @@ function Dashboard({ me }: { me: Profile }) {
 
   const isCreator = me.role === "creator"
   const valueKey = isCreator ? "earnings" : "revenue"
+  const lookingFor = otherRole(me.role)
 
   const stats = useMemo(() => {
     if (!results.data) return null
@@ -71,12 +58,28 @@ function Dashboard({ me }: { me: Profile }) {
     }
   }, [results.data, month, valueKey])
 
+  const partnershipColumns: readonly Column<PartnershipRow>[] = [
+    { header: t("partner"), cell: (p) => p.partner?.displayName ?? "…", className: "font-semibold" },
+    {
+      header: t("campaign"),
+      cell: (p) => (
+        <Link href={`/partnerships/${p.id}`} className="font-semibold">
+          {p.title}
+        </Link>
+      )
+    },
+    { header: t("code"), cell: (p) => p.code, className: "font-mono" },
+    { header: t("sales"), cell: (p) => p.totals.sales },
+    { header: t("revenue"), cell: (p) => money(p.totals.revenue) },
+    { header: t("creatorEarnings"), cell: (p) => money(p.totals.earnings) },
+    { header: t("status"), cell: (p) => <Tag tone={p.status === "active" ? "brand" : "mist"}>{tStatus("label", { status: p.status })}</Tag> }
+  ]
+
   if (!connections.data || !partnerships.data || !stats) return <Spinner />
 
   const incoming = connections.data.filter((c) => c.status === "pending" && c.toUid === me.uid)
   const outgoing = connections.data.filter((c) => c.status === "pending" && c.fromUid === me.uid)
   const accepted = connections.data.filter((c) => c.status === "accepted")
-  const lookingFor = ROLES[otherRole(me.role)].plural.toLowerCase()
   const greeting = isCreator ? me.displayName.split(" ")[0] : me.displayName
   const partnershipRows: PartnershipRow[] = partnerships.data
     .toSorted((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
@@ -85,28 +88,28 @@ function Dashboard({ me }: { me: Profile }) {
   return (
     <main className="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 pb-24 pt-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <PageTitle eyebrow="Dashboard" title={`Hi, ${greeting}`} />
-        <Button href="/discover">Find {lookingFor}</Button>
+        <PageTitle eyebrow={t("eyebrow")} title={t("greeting", { name: greeting ?? "" })} />
+        <Button href="/discover">{t("find", { role: lookingFor })}</Button>
       </div>
 
       {!me.categories.length && (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-[20px] bg-sun-soft p-5">
-          <p className="text-[15px] font-medium text-sun-ink">Finish your profile so {lookingFor} can find you in search.</p>
+          <p className="text-[15px] font-medium text-sun-ink">{t("completeNotice", { role: lookingFor })}</p>
           <Button href="/profile/edit" variant="dark" size="sm">
-            Complete profile
+            {t("completeButton")}
           </Button>
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatTile label="Active partnerships" value={partnerships.data.filter((p) => p.status === "active").length} />
-        <StatTile label={isCreator ? "Earned this month" : "Revenue this month"} value={formatMoney(stats.month)} />
-        <StatTile label={isCreator ? "Earned all time" : "Revenue all time"} value={formatMoney(stats.total)} />
-        <StatTile label="Requests waiting for you" value={incoming.length} />
+        <StatTile label={t("activePartnerships")} value={partnerships.data.filter((p) => p.status === "active").length} />
+        <StatTile label={t("valueMonth", { role: me.role })} value={money(stats.month)} />
+        <StatTile label={t("valueTotal", { role: me.role })} value={money(stats.total)} />
+        <StatTile label={t("requestsWaiting")} value={incoming.length} />
       </div>
 
       {incoming.length > 0 && (
-        <SectionCard title="Connect requests">
+        <SectionCard title={t("connectRequests")}>
           <ul className="flex flex-col divide-y divide-line">
             {incoming.map(({ id, fromUid, note }) => (
               <li key={id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
@@ -115,10 +118,10 @@ function Dashboard({ me }: { me: Profile }) {
                 </PersonLink>
                 <div className="flex gap-2">
                   <Button size="sm" disabled={respond.isPending} onClick={() => respond.mutate({ id, status: "accepted" })}>
-                    Accept
+                    {tConnect("accept")}
                   </Button>
                   <Button size="sm" variant="outline" disabled={respond.isPending} onClick={() => respond.mutate({ id, status: "declined" })}>
-                    Decline
+                    {tConnect("decline")}
                   </Button>
                 </div>
               </li>
@@ -127,16 +130,16 @@ function Dashboard({ me }: { me: Profile }) {
         </SectionCard>
       )}
 
-      <SectionCard title="Partnerships">
+      <SectionCard title={t("partnerships")}>
         {partnershipRows.length ? (
           <DataTable columns={partnershipColumns} rows={partnershipRows} rowKey={(p) => p.id} minWidth={640} />
         ) : (
-          <p className="text-[15px] text-muted">No partnerships yet. Connect with {lookingFor}, then start a partnership from their profile.</p>
+          <p className="text-[15px] text-muted">{t("noPartnerships", { role: lookingFor })}</p>
         )}
       </SectionCard>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <SectionCard title="Connections">
+        <SectionCard title={t("connections")}>
           {accepted.length ? (
             <ul className="flex flex-col gap-3">
               {accepted.map(({ id, participants }) => {
@@ -144,32 +147,32 @@ function Dashboard({ me }: { me: Profile }) {
                 return (
                   <li key={id}>
                     <PersonLink uid={uid} profile={people[uid]}>
-                      <span className="truncate text-sm text-muted">{people[uid]?.headline || "Connected"}</span>
+                      <span className="truncate text-sm text-muted">{people[uid]?.headline || t("connected")}</span>
                     </PersonLink>
                   </li>
                 )
               })}
             </ul>
           ) : (
-            <p className="text-[15px] text-muted">No connections yet.</p>
+            <p className="text-[15px] text-muted">{t("noConnections")}</p>
           )}
         </SectionCard>
-        <SectionCard title="Requests you sent">
+        <SectionCard title={t("sentRequests")}>
           {outgoing.length ? (
             <ul className="flex flex-col gap-3">
               {outgoing.map(({ id, toUid }) => (
                 <li key={id} className="flex items-center justify-between gap-3">
                   <PersonLink uid={toUid} profile={people[toUid]}>
-                    <span className="text-sm text-muted">Waiting for a reply</span>
+                    <span className="text-sm text-muted">{t("waiting")}</span>
                   </PersonLink>
                   <Button size="sm" variant="ghost" disabled={remove.isPending} onClick={() => remove.mutate(id)}>
-                    Withdraw
+                    {tConnect("withdraw")}
                   </Button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-[15px] text-muted">Nothing pending.</p>
+            <p className="text-[15px] text-muted">{t("nothingPending")}</p>
           )}
         </SectionCard>
       </div>
