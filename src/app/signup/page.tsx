@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword, updateProfile as updateAuthProfile, typ
 import { useQueryClient } from "@tanstack/react-query"
 import { auth } from "@/lib/firebase"
 import { getProfile } from "@/lib/data"
+import { LEGAL } from "@/lib/legal"
 import { keys, useAuth, useCreateProfile } from "@/lib/queries"
 import type { Role } from "@/lib/types"
 import AuthCard, { GoogleButton, authErrorMessage, signInWithGoogle } from "@/components/AuthCard"
@@ -101,6 +102,13 @@ function SignupForm() {
         </Button>
       </form>
       <GoogleButton onClick={handleGoogle} disabled={busy} />
+      <p className="text-center text-[13px] leading-relaxed text-muted">
+        By creating an account you confirm you are at least {LEGAL.minimumAge} and have read our{" "}
+        <Link href="/privacy" className="underline">
+          privacy policy
+        </Link>
+        .
+      </p>
     </AuthCard>
   )
 }

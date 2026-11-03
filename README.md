@@ -2,27 +2,49 @@
 
 A marketplace that connects growing creators with brands in their niche, and tracks what every affiliate code earns.
 
-## What's in the MVP
+## Features
 
-- **Sign-up with a role**: creator or brand (email/password or Google).
+- **Sign-up with a role**: creator or brand, by email/password or Google.
 - **Profiles**: public details (categories, platforms, audience, headline, bio) plus private contact details.
 - **Discover**: browse the other side by category, platform, audience age and keyword.
 - **Connect requests**: contact details unlock only when both sides accept.
 - **Partnerships**: a connected creator and brand set up a campaign with an affiliate code.
 - **Results**: either side logs sales, revenue and creator earnings per code; both dashboards show the totals.
+- **Legal pages**: privacy policy (`/privacy`) and cookie policy (`/cookies`), linked from every page's footer.
 
 Results are entered manually for now. Automatic tracking (e.g. a Shopify integration) is the next step.
 
 ## Stack
 
-Node 26, Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS 4, Firebase Auth and Firestore.
+Node 26 · Next.js 16 (App Router) · React 19 · TypeScript (strict) · TanStack Query · Tailwind CSS 4 · Firebase
+Authentication and Cloud Firestore · hosted on Vercel.
 
-- `src/lib/types.ts`: domain types (profiles, connections, partnerships, results)
-- `src/lib/data.ts`: plain async Firestore reads and writes
-- `src/lib/queries.ts`: TanStack Query hooks; every read is a query, every write a mutation that invalidates what it changes
-- `src/lib/auth.ts`: Firebase auth exposed through `useSyncExternalStore`
+## Project structure
 
-Components never fetch in `useEffect`. Access control lives in [`firestore.rules`](firestore.rules).
+```
+src/
+  app/                    routes (App Router)
+    page.tsx              landing page with the animated hero
+    signup/ login/        authentication
+    profile/edit/         create and edit your profile
+    discover/             search the other side
+    u/[uid]/              public profile, connect, start a partnership
+    dashboard/            stats, requests, partnerships, connections
+    partnerships/[id]/    a partnership and its logged results
+    privacy/ cookies/     legal pages
+    providers.tsx         TanStack Query client
+  components/             UI building blocks (ui.tsx) and feature components
+  lib/
+    types.ts              domain types
+    data.ts               plain async Firestore reads and writes
+    queries.ts            TanStack Query hooks: reads are queries, writes are mutations that invalidate what they change
+    auth.ts               Firebase auth state via useSyncExternalStore
+    legal.ts              company details used by the legal pages
+    firebase.ts           Firebase setup (switches to emulators when configured)
+firestore.rules           who can read and write what
+```
+
+Components never fetch in `useEffect`: all data goes through the hooks in `src/lib/queries.ts`.
 
 ### Data model
 
@@ -62,6 +84,16 @@ Authentication, then deploy the rules and indexes:
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` | Production build, including the TypeScript check |
+| `npm run start` | Serve the production build |
+| `npm run lint` | ESLint |
+| `npm run emulators` | Firebase Auth and Firestore emulators |
+
 ## Deploying to Vercel
 
 Vercel detects Next.js automatically and uses Node 26 from `engines` in `package.json`.
@@ -72,3 +104,13 @@ Vercel detects Next.js automatically and uses Node 26 from `engines` in `package
 3. In the Firebase console, open Authentication → Settings → Authorized domains and add your Vercel domain
    (e.g. `your-project.vercel.app`), otherwise Google sign-in is rejected.
 4. Deploy the Firestore rules and indexes (`firebase deploy --only firestore:rules,firestore:indexes`) if you haven't.
+
+## Before launch: legal checklist
+
+The privacy and cookie policies describe what the app does today. Before going live:
+
+- Fill in every `[BRACKETED]` value in [`src/lib/legal.ts`](src/lib/legal.ts) (company name, registration number,
+  address, privacy email, Firestore location). The pages highlight anything still missing.
+- Have the texts reviewed by a lawyer; they are a starting point, not legal advice.
+- Update the cookie policy before adding analytics or any other non-essential storage, and add a consent banner at
+  the same time.
