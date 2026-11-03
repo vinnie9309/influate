@@ -1,13 +1,62 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #14201c;
+  --color-paper: #f7f8f5;
+  --color-mist: #f1f4f2;
+
+  --color-line: #e2e8e4;
+  --color-line-strong: #d5ddd8;
+
+  --color-body: #4a5853;
+  --color-muted: #5d6b66;
+  --color-subtle: #3b4a44;
+
+  --color-brand: #1f7a5a;
+  --color-brand-dark: #155c43;
+  --color-brand-soft: #e3f1ea;
+
+  --color-sun: #f2b544;
+  --color-sun-soft: #fff4dc;
+  --color-sun-ink: #7a5300;
+
+  --color-danger: #b42318;
+  --color-danger-soft: #fef3f2;
+
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+
+  --shadow-float: 0 30px 60px -30px rgba(20, 32, 28, 0.25);
+  --shadow-card: 0 20px 40px -32px rgba(20, 32, 28, 0.35);
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 @layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
   body {
     @apply bg-paper text-ink antialiased;
   }
   :focus-visible {
-    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-paper;
+    @apply outline-hidden ring-2 ring-brand ring-offset-2 ring-offset-paper;
   }
 }
 

@@ -15,7 +15,7 @@ Results are entered manually for now. Automatic tracking (e.g. a Shopify integra
 
 ## Stack
 
-Next.js 14 (App Router), Tailwind CSS, Firebase Auth and Firestore. Access control lives in [`firestore.rules`](firestore.rules).
+Node 26, Next.js 16 (App Router), React 19, Tailwind CSS 4, Firebase Auth and Firestore. Access control lives in [`firestore.rules`](firestore.rules).
 
 ### Data model
 
@@ -29,7 +29,10 @@ Next.js 14 (App Router), Tailwind CSS, Firebase Auth and Firestore. Access contr
 
 ## Running locally
 
+Uses Node 26 (see `.nvmrc`).
+
 ```bash
+nvm use
 npm install
 ```
 
@@ -51,3 +54,14 @@ Authentication, then deploy the rules and indexes:
 ```bash
 firebase deploy --only firestore:rules,firestore:indexes
 ```
+
+## Deploying to Vercel
+
+Vercel detects Next.js automatically and uses Node 26 from `engines` in `package.json`.
+
+1. Import the GitHub repository in Vercel (Add New → Project). Keep the default build settings.
+2. Under Settings → Environment Variables, add the six `NEXT_PUBLIC_FIREBASE_*` values from `.env.example` for
+   Production and Preview. Do not set `NEXT_PUBLIC_USE_FIREBASE_EMULATORS`.
+3. In the Firebase console, open Authentication → Settings → Authorized domains and add your Vercel domain
+   (e.g. `your-project.vercel.app`), otherwise Google sign-in is rejected.
+4. Deploy the Firestore rules and indexes (`firebase deploy --only firestore:rules,firestore:indexes`) if you haven't.

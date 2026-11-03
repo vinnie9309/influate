@@ -24,7 +24,7 @@ export function Card({ className = "", ...props }) {
 }
 
 const inputClasses =
-  "w-full rounded-xl border border-line-strong bg-white px-3.5 text-[15px] text-ink placeholder:text-muted/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+  "w-full rounded-xl border border-line-strong bg-white px-3.5 text-[15px] text-ink placeholder:text-muted/70 focus:border-brand focus:outline-hidden focus:ring-2 focus:ring-brand/20"
 
 export function Field({ label, id, hint, as = "input", options, className = "", ...props }) {
   let control

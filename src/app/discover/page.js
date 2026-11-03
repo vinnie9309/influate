@@ -17,13 +17,15 @@ function Discover() {
   const [text, setText] = useState("")
   const [platform, setPlatform] = useState("")
   const [age, setAge] = useState("")
-  const [results, setResults] = useState(null)
+  // Results remember which query they answer, so a stale response never shows.
+  const [found, setFound] = useState({ query: null, list: null })
   const [connections, setConnections] = useState([])
 
+  const query = `${role}|${category}`
   useEffect(() => {
-    setResults(null)
-    searchProfiles({ role, category }).then(setResults)
+    searchProfiles({ role, category }).then((list) => setFound({ query: `${role}|${category}`, list }))
   }, [role, category])
+  const results = found.query === query ? found.list : null
 
   useEffect(() => watchMyConnections(profile.uid, setConnections), [profile.uid])
 
@@ -59,7 +61,7 @@ function Discover() {
                 type="button"
                 aria-pressed={role === r}
                 onClick={() => setRole(r)}
-                className={`h-10 rounded-lg px-4 text-sm font-bold ${role === r ? "bg-white text-ink shadow-sm" : "text-muted"}`}
+                className={`h-10 rounded-lg px-4 text-sm font-bold ${role === r ? "bg-white text-ink shadow-xs" : "text-muted"}`}
               >
                 {ROLES[r].plural}
               </button>
@@ -72,7 +74,7 @@ function Discover() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Search by name, city or keyword"
-              className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+              className="min-w-0 flex-1 bg-transparent text-[15px] outline-hidden"
             />
           </label>
           {role === "creator" && (

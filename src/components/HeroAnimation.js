@@ -83,7 +83,7 @@ export default function HeroAnimation() {
       </svg>
       <div
         aria-hidden="true"
-        className="fx-card absolute -bottom-7 left-1/2 -ml-[150px] flex w-[300px] items-center justify-between gap-3 rounded-2xl bg-ink px-[18px] py-4 text-paper shadow-card"
+        className="fx-card absolute -bottom-7 left-1/2 ml-[-150px] flex w-[300px] items-center justify-between gap-3 rounded-2xl bg-ink px-[18px] py-4 text-paper shadow-card"
       >
         <div className="flex flex-col gap-0.5">
           <span className="text-xs text-[#A9BAB3]">Partnership earnings this month</span>

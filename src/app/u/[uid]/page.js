@@ -26,7 +26,6 @@ function Contacts({ uid, visible, name }) {
 
   useEffect(() => {
     if (!visible) return
-    setFailed(false)
     getContacts(uid)
       .then(setContacts)
       .catch(() => setFailed(true))
@@ -54,7 +53,7 @@ function Contacts({ uid, visible, name }) {
         rows.map(([k, v]) => (
           <div key={k} className="flex flex-col gap-1 rounded-[14px] bg-brand-soft p-3.5">
             <dt className="text-xs text-brand-dark">{k}</dt>
-            <dd className="break-words text-[15px] font-bold">{v}</dd>
+            <dd className="wrap-break-word text-[15px] font-bold">{v}</dd>
           </div>
         ))
       ) : (
