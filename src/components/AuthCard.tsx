@@ -1,28 +1,31 @@
 "use client"
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import type { ReactNode } from "react"
+import { FirebaseError } from "firebase/app"
+import { GoogleAuthProvider, signInWithPopup, type User } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { Button, Card } from "./ui"
 
-export function authErrorMessage(error) {
-  const messages = {
-    "auth/email-already-in-use": "An account with this email already exists. Try logging in.",
-    "auth/invalid-email": "That email address doesn't look right.",
-    "auth/weak-password": "Use at least 6 characters for your password.",
-    "auth/invalid-credential": "Email or password is incorrect.",
-    "auth/wrong-password": "Email or password is incorrect.",
-    "auth/user-not-found": "Email or password is incorrect.",
-    "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
-    "auth/popup-closed-by-user": "The Google window was closed before signing in."
-  }
-  return messages[error?.code] ?? "Something went wrong. Please try again."
+const authMessages: Record<string, string> = {
+  "auth/email-already-in-use": "An account with this email already exists. Try logging in.",
+  "auth/invalid-email": "That email address doesn't look right.",
+  "auth/weak-password": "Use at least 6 characters for your password.",
+  "auth/invalid-credential": "Email or password is incorrect.",
+  "auth/wrong-password": "Email or password is incorrect.",
+  "auth/user-not-found": "Email or password is incorrect.",
+  "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
+  "auth/popup-closed-by-user": "The Google window was closed before signing in."
 }
 
-export async function signInWithGoogle() {
-  const result = await signInWithPopup(auth, new GoogleAuthProvider())
-  return result.user
+export function authErrorMessage(error: unknown): string {
+  return (error instanceof FirebaseError && authMessages[error.code]) || "Something went wrong. Please try again."
 }
 
-export function GoogleButton({ onClick, disabled }) {
+export async function signInWithGoogle(): Promise<User> {
+  const { user } = await signInWithPopup(auth, new GoogleAuthProvider())
+  return user
+}
+
+export function GoogleButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
   return (
     <Button variant="outline" className="w-full" onClick={onClick} disabled={disabled}>
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -36,7 +39,14 @@ export function GoogleButton({ onClick, disabled }) {
   )
 }
 
-export default function AuthCard({ title, subtitle, children, footer }) {
+interface AuthCardProps {
+  title: string
+  subtitle: string
+  children: ReactNode
+  footer: ReactNode
+}
+
+export default function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
   return (
     <main className="px-6 pb-24 pt-8">
       <Card className="mx-auto flex max-w-[440px] flex-col gap-6 p-8 shadow-float">

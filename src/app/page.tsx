@@ -7,21 +7,21 @@ const steps = [
   { title: "Find a fit", text: "Browse by category, audience and platform. Send a connect request with a short note." },
   { title: "Exchange contacts", text: "Contact details unlock only when both sides accept. No cold DMs, no spam." },
   { title: "Track the partnership", text: "Log the affiliate code and the results it brings, and see earnings on your dashboard." }
-]
+] as const
 
 const forCreators = [
   "Get found by brands in your niche, even with a small audience",
   "Keep all your affiliate codes and earnings in one place",
   "Decide who sees your contact details"
-]
+] as const
 
 const forBrands = [
   "Filter creators by category, audience age and platform",
   "See revenue per creator and per code",
   "Tell creators what you sell and who you want to reach"
-]
+] as const
 
-function CheckList({ items, iconClass, textClass }) {
+function CheckList({ items, iconClass, textClass }: { items: readonly string[]; iconClass: string; textClass: string }) {
   return (
     <ul className={`flex flex-col gap-3 text-base leading-normal ${textClass}`}>
       {items.map((item) => (
@@ -73,17 +73,17 @@ export default function Home() {
             </h2>
           </div>
           <ol className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
-            {steps.map((s, i) => (
-              <li key={s.title} className="flex flex-col gap-3 rounded-[18px] bg-paper p-7">
+            {steps.map(({ title, text }, i) => (
+              <li key={title} className="flex flex-col gap-3 rounded-[18px] bg-paper p-7">
                 <span
                   className={`flex h-10 w-10 items-center justify-center rounded-xl font-extrabold ${
-                    i === 3 ? "bg-sun-soft text-sun-ink" : "bg-brand-soft text-brand-dark"
+                    i === steps.length - 1 ? "bg-sun-soft text-sun-ink" : "bg-brand-soft text-brand-dark"
                   }`}
                 >
                   {i + 1}
                 </span>
-                <h3 className="text-[19px] font-bold">{s.title}</h3>
-                <p className="text-[15px] leading-relaxed text-body">{s.text}</p>
+                <h3 className="text-[19px] font-bold">{title}</h3>
+                <p className="text-[15px] leading-relaxed text-body">{text}</p>
               </li>
             ))}
           </ol>
