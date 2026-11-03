@@ -1,64 +1,28 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    darkMode: ["class"],
-    content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}"
-  ],
+  content: ["./src/**/*.{js,jsx,mdx}"],
   theme: {
-  	extend: {
-  		backgroundImage: {
-  			'main-bg': 'linear-gradient(180deg, rgba(176,176,176,1) 0%, rgba(255,255,255,1) 100%)'
-  		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		},
-  		colors: {
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
-  			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
-  			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
-  			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			}
-  		}
-  	}
+    extend: {
+      colors: {
+        ink: "#14201C",
+        paper: "#F7F8F5",
+        mist: "#F1F4F2",
+        line: { DEFAULT: "#E2E8E4", strong: "#D5DDD8" },
+        body: "#4A5853",
+        muted: "#5D6B66",
+        subtle: "#3B4A44",
+        brand: { DEFAULT: "#1F7A5A", dark: "#155C43", soft: "#E3F1EA" },
+        sun: { DEFAULT: "#F2B544", soft: "#FFF4DC", ink: "#7A5300" },
+        danger: { DEFAULT: "#B42318", soft: "#FEF3F2" }
+      },
+      fontFamily: {
+        sans: ["var(--font-jakarta)", "system-ui", "sans-serif"]
+      },
+      boxShadow: {
+        float: "0 30px 60px -30px rgba(20,32,28,0.25)",
+        card: "0 20px 40px -32px rgba(20,32,28,0.35)"
+      }
+    }
   },
-  plugins: [require("tailwindcss-animate")]
+  plugins: []
 }

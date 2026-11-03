@@ -1,39 +1,53 @@
-# influate
+# Influate
 
-the one project i plan to start AND FINISH
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+A marketplace that connects growing creators with brands in their niche, and tracks what every affiliate code earns.
 
-## Getting Started
+## What's in the MVP
 
-First, run the development server:
+- **Sign-up with a role**: creator or brand (email/password or Google).
+- **Profiles**: public details (categories, platforms, audience, headline, bio) plus private contact details.
+- **Discover**: browse the other side by category, platform, audience age and keyword.
+- **Connect requests**: contact details unlock only when both sides accept.
+- **Partnerships**: a connected creator and brand set up a campaign with an affiliate code.
+- **Results**: either side logs sales, revenue and creator earnings per code; both dashboards show the totals.
+
+Results are entered manually for now. Automatic tracking (e.g. a Shopify integration) is the next step.
+
+## Stack
+
+Next.js 14 (App Router), Tailwind CSS, Firebase Auth and Firestore. Access control lives in [`firestore.rules`](firestore.rules).
+
+### Data model
+
+| Collection | Contents | Who can read |
+|---|---|---|
+| `profiles/{uid}` | Public profile and role | Anyone |
+| `contacts/{uid}` | Email, phone, links | The owner and accepted connections |
+| `connections/{uidA_uidB}` | Request between a creator and a brand | The two users |
+| `partnerships/{id}` | Creator, brand, code, terms, status | The two participants |
+| `results/{id}` | Logged sales for a partnership | The two participants |
+
+## Running locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Against local emulators (no Firebase project needed)
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Requires Java 11+ (`brew install openjdk@21`).
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```bash
+echo "NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true" > .env.local
+npm run emulators   # auth on :9099, firestore on :8080
+npm run dev         # in a second terminal
+```
 
-## Learn More
+### Against a real Firebase project
 
-To learn more about Next.js, take a look at the following resources:
+Copy `.env.example` to `.env.local` and fill in your web app config. Enable Email/Password and Google sign-in in
+Authentication, then deploy the rules and indexes:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+```bash
+firebase deploy --only firestore:rules,firestore:indexes
+```
