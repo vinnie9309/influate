@@ -1,15 +1,14 @@
 "use client"
-import { signOut } from "firebase/auth"
 import { useQueryClient } from "@tanstack/react-query"
 import { useTranslations } from "next-intl"
 import { Link, usePathname, useRouter } from "@/i18n/navigation"
-import { auth } from "@/lib/firebase"
+import { signOut } from "@/lib/data"
 import { useAuth } from "@/lib/queries"
 import LanguageSwitcher from "./LanguageSwitcher"
 import Logo from "./Logo"
 import { Button } from "./ui"
 
-type NavKey = "dashboard" | "discover" | "myProfile" | "forCreators" | "forBrands" | "howItWorks"
+type NavKey = "dashboard" | "discover" | "myProfile" | "account" | "forCreators" | "forBrands" | "howItWorks"
 
 const appLinks: readonly { href: string; key: NavKey }[] = [
   { href: "/dashboard", key: "dashboard" },
@@ -29,11 +28,11 @@ export default function SiteHeader() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const links = user
-    ? [...appLinks, ...(profile ? [{ href: `/u/${profile.uid}`, key: "myProfile" as const }] : [])]
+    ? [...appLinks, ...(profile ? [{ href: `/u/${profile.uid}`, key: "myProfile" as const }] : []), { href: "/account", key: "account" as const }]
     : marketingLinks
 
   const handleSignOut = async () => {
-    await signOut(auth)
+    await signOut()
     // Cached reads belong to the previous user.
     queryClient.clear()
     router.push("/")

@@ -32,7 +32,7 @@ function Discover({ me }: { me: Profile }) {
     [connections.data, me.uid]
   )
 
-  // Firestore filters by role and category; the rest is narrowed here.
+  // The database filters by role and category; the rest is narrowed here.
   const filtered = useMemo(() => {
     const needle = text.trim().toLowerCase()
     return search.data
@@ -40,7 +40,7 @@ function Discover({ me }: { me: Profile }) {
       .filter((p) => !platform || p.platforms.includes(platform))
       .filter((p) => !age || p.audienceAge === age)
       .filter((p) => !needle || [p.displayName, p.headline, p.city, p.bio, p.targetAudience].join(" ").toLowerCase().includes(needle))
-      .toSorted((a, b) => (b.updatedAt?.seconds ?? 0) - (a.updatedAt?.seconds ?? 0))
+      .toSorted((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   }, [search.data, text, platform, age, me.uid])
 
   const roleOptions = ROLE_VALUES.map((value) => ({ value, label: tRoles("plural", { role: value }) }))

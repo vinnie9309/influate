@@ -20,10 +20,12 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
   const t = useTranslations("Partnership")
   const tRoles = useTranslations("Roles")
   const tStatus = useTranslations("Status")
+  const tCommon = useTranslations("Common")
   const money = useMoney()
-  const otherUid = partnership.participants.find((p) => p !== me.uid) ?? ""
+  // Undefined when the partner deleted their account.
+  const otherUid = partnership.participants.find((p) => p !== me.uid)
   const { data: partner } = useProfile(otherUid)
-  const { data: results = [] } = usePartnershipResults(partnership, me.uid)
+  const { data: results = [] } = usePartnershipResults(partnership)
   const setStatus = useSetPartnershipStatus()
   const deleteResult = useDeleteResult()
 
@@ -67,9 +69,13 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
               <h1 className="text-[28px] font-extrabold tracking-[-0.03em]">{partnership.title}</h1>
               <Tag tone={active ? "brand" : "mist"}>{tStatus("label", { status: partnership.status })}</Tag>
             </div>
-            <PersonLink uid={otherUid} profile={partner} size={36}>
-              {partner && <span className="text-sm text-muted">{tRoles("label", { role: partner.role })}</span>}
-            </PersonLink>
+            {otherUid ? (
+              <PersonLink uid={otherUid} profile={partner} size={36}>
+                {partner && <span className="text-sm text-muted">{tRoles("label", { role: partner.role })}</span>}
+              </PersonLink>
+            ) : (
+              <span className="text-[15px] font-semibold text-muted">{tCommon("deletedAccount")}</span>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2">
             <span className="rounded-full border border-sun bg-sun-soft px-4 py-1.5 font-mono text-base font-bold text-sun-ink">
@@ -113,7 +119,7 @@ function PartnershipView({ partnership, me }: { partnership: Partnership; me: Pr
 function PartnershipPage({ me }: { me: Profile }) {
   const t = useTranslations("Partnership")
   const { id } = useParams<{ id: string }>()
-  // A denied read means it isn't the viewer's partnership: shown as not found.
+  // The database returns nothing unless the viewer is part of it: shown as not found.
   const { data: partnership, isPending } = usePartnership(id)
 
   if (isPending) return <Spinner />

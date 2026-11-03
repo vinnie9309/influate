@@ -2,17 +2,17 @@
 import { Suspense, useState, type FormEvent } from "react"
 import { useSearchParams } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
-import { createUserWithEmailAndPassword, updateProfile as updateAuthProfile, type User } from "firebase/auth"
 import { useQueryClient } from "@tanstack/react-query"
-import { Link, redirect, useRouter } from "@/i18n/navigation"
-import { auth } from "@/lib/firebase"
-import { getProfile } from "@/lib/data"
+import { Link, getPathname, redirect, useRouter } from "@/i18n/navigation"
 import { LEGAL } from "@/lib/legal"
-import { keys, useAuth, useCreateProfile } from "@/lib/queries"
+import { useAuth } from "@/lib/queries"
+import { supabase } from "@/lib/supabase"
 import type { Role } from "@/lib/types"
 import AuthCard, { GoogleButton, authErrorKey, signInWithGoogle, type AuthErrorKey } from "@/components/AuthCard"
 import RolePicker from "@/components/RolePicker"
 import { Button, ErrorNote, Field } from "@/components/ui"
+
+const AFTER_SIGNUP = "/profile/edit?welcome=1"
 
 function SignupForm() {
   const t = useTranslations("Auth")
@@ -21,22 +21,17 @@ function SignupForm() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { user, loading } = useAuth()
-  const createProfile = useCreateProfile()
   const [role, setRole] = useState<Role>(params.get("role") === "brand" ? "brand" : "creator")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<AuthErrorKey | null>(null)
   const [busy, setBusy] = useState(false)
+  /** Set when the project requires email confirmation before the first sign-in. */
+  const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null)
 
   // Already signed in (and not mid-signup): nothing to do here.
   if (!loading && user && !busy) redirect({ href: "/dashboard", locale })
-
-  const finish = async (newUser: User, displayName: string) => {
-    const existing = await queryClient.fetchQuery({ queryKey: keys.profile(newUser.uid), queryFn: () => getProfile(newUser.uid) })
-    if (!existing) await createProfile.mutateAsync({ uid: newUser.uid, role, displayName, email: newUser.email })
-    router.push("/profile/edit?welcome=1")
-  }
 
   const run = async (signUp: () => Promise<void>) => {
     setError(null)
@@ -52,17 +47,38 @@ function SignupForm() {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     void run(async () => {
-      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password)
-      await updateAuthProfile(newUser, { displayName: name.trim() })
-      await finish(newUser, name.trim())
+      // The role and name travel as user metadata; a database trigger creates the profile from them.
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { role, display_name: name.trim() },
+          emailRedirectTo: `${window.location.origin}${getPathname({ href: AFTER_SIGNUP, locale })}`
+        }
+      })
+      if (signUpError) throw signUpError
+      if (!data.session) {
+        setConfirmationSentTo(email)
+        setBusy(false)
+        return
+      }
+      await queryClient.invalidateQueries({ queryKey: ["profile"] })
+      router.push(AFTER_SIGNUP)
     })
   }
 
-  const handleGoogle = () =>
-    void run(async () => {
-      const newUser = await signInWithGoogle()
-      await finish(newUser, newUser.displayName ?? "")
-    })
+  // Google users pick their role on the profile page after coming back.
+  const handleGoogle = () => void run(() => signInWithGoogle(AFTER_SIGNUP, locale))
+
+  if (confirmationSentTo) {
+    return (
+      <AuthCard title={t("checkEmailTitle")} subtitle={t("checkEmailText", { email: confirmationSentTo })}>
+        <Button href="/login" variant="outline">
+          {t("logIn")}
+        </Button>
+      </AuthCard>
+    )
+  }
 
   return (
     <AuthCard
@@ -85,6 +101,7 @@ function SignupForm() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete={role === "brand" ? "organization" : "name"}
+          maxLength={80}
           required
         />
         <Field id="email" type="email" label={t("email")} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />

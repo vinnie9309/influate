@@ -2,10 +2,9 @@
 import { Suspense, useState, type FormEvent } from "react"
 import { useSearchParams } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
-import { signInWithEmailAndPassword } from "firebase/auth"
 import { Link, redirect } from "@/i18n/navigation"
-import { auth } from "@/lib/firebase"
 import { useAuth } from "@/lib/queries"
+import { supabase } from "@/lib/supabase"
 import AuthCard, { GoogleButton, authErrorKey, signInWithGoogle, type AuthErrorKey } from "@/components/AuthCard"
 import { Button, ErrorNote, Field } from "@/components/ui"
 
@@ -21,10 +20,11 @@ function LoginForm() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<AuthErrorKey | null>(null)
   const [busy, setBusy] = useState(false)
+  const next = safeNext(params.get("next"))
 
-  if (!loading && user) redirect({ href: safeNext(params.get("next")), locale })
+  if (!loading && user) redirect({ href: next, locale })
 
-  const run = async (signIn: () => Promise<unknown>) => {
+  const run = async (signIn: () => Promise<void>) => {
     setError(null)
     setBusy(true)
     try {
@@ -37,7 +37,10 @@ function LoginForm() {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    void run(() => signInWithEmailAndPassword(auth, email, password))
+    void run(async () => {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) throw signInError
+    })
   }
 
   return (
@@ -69,7 +72,7 @@ function LoginForm() {
           {busy ? t("loggingIn") : t("logIn")}
         </Button>
       </form>
-      <GoogleButton onClick={() => void run(signInWithGoogle)} disabled={busy} />
+      <GoogleButton onClick={() => void run(() => signInWithGoogle(next, locale))} disabled={busy} />
     </AuthCard>
   )
 }

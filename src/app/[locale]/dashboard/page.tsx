@@ -34,6 +34,7 @@ function Dashboard({ me }: { me: Profile }) {
   const t = useTranslations("Dashboard")
   const tStatus = useTranslations("Status")
   const tConnect = useTranslations("Connect")
+  const tCommon = useTranslations("Common")
   const money = useMoney()
   const month = useCurrentMonth()
   const connections = useMyConnections(me.uid)
@@ -59,7 +60,12 @@ function Dashboard({ me }: { me: Profile }) {
   }, [results.data, month, valueKey])
 
   const partnershipColumns: readonly Column<PartnershipRow>[] = [
-    { header: t("partner"), cell: (p) => p.partner?.displayName ?? "…", className: "font-semibold" },
+    {
+      header: t("partner"),
+      // A partnership with one participant left means the other side deleted their account.
+      cell: (p) => (p.participants.length < 2 ? tCommon("deletedAccount") : (p.partner?.displayName ?? "…")),
+      className: "font-semibold"
+    },
     {
       header: t("campaign"),
       cell: (p) => (
@@ -82,7 +88,7 @@ function Dashboard({ me }: { me: Profile }) {
   const accepted = connections.data.filter((c) => c.status === "accepted")
   const greeting = isCreator ? me.displayName.split(" ")[0] : me.displayName
   const partnershipRows: PartnershipRow[] = partnerships.data
-    .toSorted((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
+    .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((p) => ({ ...p, partner: people[otherUid(p.participants)], totals: stats.totalsById.get(p.id) ?? emptyTotals() }))
 
   return (

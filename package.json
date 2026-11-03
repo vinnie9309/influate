@@ -7,11 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "emulators": "firebase emulators:start --only auth,firestore --project demo-influate"
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript > src/lib/database.types.ts",
+    "test:db": "node scripts/test-db.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "@tanstack/react-query": "^5.105.3",
-    "firebase": "^13.2.0",
     "lucide-react": "^1.67.0",
     "next": "^16.4.4",
     "next-intl": "^4.14.9",
@@ -26,6 +30,7 @@
     "eslint": "^10.14.0",
     "eslint-config-next": "^16.4.4",
     "postcss": "^8.5.32",
+    "supabase": "^3.0.0",
     "tailwindcss": "^4.3.4",
     "typescript": "^6.0.3"
   },

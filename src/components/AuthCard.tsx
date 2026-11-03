@@ -1,9 +1,10 @@
 "use client"
 import type { ReactNode } from "react"
+import { isAuthError } from "@supabase/supabase-js"
 import { useTranslations } from "next-intl"
-import { FirebaseError } from "firebase/app"
-import { GoogleAuthProvider, signInWithPopup, type User } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { getPathname } from "@/i18n/navigation"
+import type { Locale } from "@/i18n/routing"
+import { supabase } from "@/lib/supabase"
 import { Button, Card } from "./ui"
 
 export type AuthErrorKey =
@@ -11,29 +12,33 @@ export type AuthErrorKey =
   | "invalidEmail"
   | "weakPassword"
   | "invalidCredentials"
+  | "emailNotConfirmed"
   | "tooManyRequests"
-  | "popupClosed"
   | "generic"
 
 const errorKeys: Record<string, AuthErrorKey> = {
-  "auth/email-already-in-use": "emailInUse",
-  "auth/invalid-email": "invalidEmail",
-  "auth/weak-password": "weakPassword",
-  "auth/invalid-credential": "invalidCredentials",
-  "auth/wrong-password": "invalidCredentials",
-  "auth/user-not-found": "invalidCredentials",
-  "auth/too-many-requests": "tooManyRequests",
-  "auth/popup-closed-by-user": "popupClosed"
+  user_already_exists: "emailInUse",
+  email_exists: "emailInUse",
+  email_address_invalid: "invalidEmail",
+  weak_password: "weakPassword",
+  invalid_credentials: "invalidCredentials",
+  email_not_confirmed: "emailNotConfirmed",
+  over_request_rate_limit: "tooManyRequests",
+  over_email_send_rate_limit: "tooManyRequests"
 }
 
 /** Maps a sign-in error to its message key under Auth.errors. */
 export function authErrorKey(error: unknown): AuthErrorKey {
-  return (error instanceof FirebaseError && errorKeys[error.code]) || "generic"
+  return (isAuthError(error) && error.code && errorKeys[error.code]) || "generic"
 }
 
-export async function signInWithGoogle(): Promise<User> {
-  const { user } = await signInWithPopup(auth, new GoogleAuthProvider())
-  return user
+/** Leaves for Google and comes back to `href` (in the given language) signed in. */
+export async function signInWithGoogle(href: string, locale: Locale): Promise<void> {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}${getPathname({ href, locale })}` }
+  })
+  if (error) throw error
 }
 
 export function GoogleButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
@@ -55,7 +60,7 @@ interface AuthCardProps {
   title: string
   subtitle: string
   children: ReactNode
-  footer: ReactNode
+  footer?: ReactNode
 }
 
 export default function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
@@ -68,7 +73,7 @@ export default function AuthCard({ title, subtitle, children, footer }: AuthCard
         </div>
         {children}
       </Card>
-      <p className="mt-6 text-center text-sm text-muted">{footer}</p>
+      {footer && <p className="mt-6 text-center text-sm text-muted">{footer}</p>}
     </main>
   )
 }

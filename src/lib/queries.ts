@@ -3,7 +3,7 @@ import { useAuthUser } from "./auth"
 import * as data from "./data"
 import type { Partnership, Profile, Role } from "./types"
 
-// All Firestore reads go through TanStack Query (cached, deduplicated, refetched on focus);
+// All database reads go through TanStack Query (cached, deduplicated, refetched on focus);
 // every write is a mutation that invalidates the queries it affects.
 
 export const keys = {
@@ -30,7 +30,7 @@ export const useProfile = (uid: string | undefined) =>
 /** The signed-in user and their profile. `profile` is null when they haven't created one yet. */
 export function useAuth() {
   const { user, ready } = useAuthUser()
-  const profile = useProfile(user?.uid)
+  const profile = useProfile(user?.id)
   return {
     user,
     profile: profile.data ?? null,
@@ -69,13 +69,12 @@ export const useMyPartnerships = (uid: string) =>
 export const usePartnership = (id: string) =>
   useQuery({ queryKey: keys.partnership(id), queryFn: () => data.getPartnership(id) })
 
-export const useMyResults = (uid: string) =>
-  useQuery({ queryKey: keys.results(uid), queryFn: () => data.getMyResults(uid) })
+export const useMyResults = (uid: string) => useQuery({ queryKey: keys.results(uid), queryFn: data.getMyResults })
 
-export const usePartnershipResults = (partnership: Partnership | null | undefined, uid: string) =>
+export const usePartnershipResults = (partnership: Partnership | null | undefined) =>
   useQuery({
     queryKey: keys.partnershipResults(partnership?.id ?? ""),
-    queryFn: () => data.getPartnershipResults((partnership as Partnership).id, uid),
+    queryFn: () => data.getPartnershipResults((partnership as Partnership).id),
     enabled: Boolean(partnership)
   })
 
@@ -94,10 +93,7 @@ const CONNECTIONS = [["connection"], ["connections"]] as const
 const PARTNERSHIPS = [["partnership"], ["partnerships"]] as const
 const RESULTS = [["results"]] as const
 
-export const useCreateProfile = () => useWrite(
-  ({ uid, ...fields }: { uid: string } & Parameters<typeof data.createProfile>[1]) => data.createProfile(uid, fields),
-  [["profile"], ["profiles"]]
-)
+export const useCreateProfile = () => useWrite(data.createProfile, [["profile"], ["profiles"], ["contacts"]])
 
 export const useSaveProfile = () => useWrite(
   async ({ uid, fields, contacts }: { uid: string; fields: Parameters<typeof data.updateProfile>[1]; contacts: Parameters<typeof data.saveContacts>[1] }) => {
@@ -115,3 +111,11 @@ export const useSetPartnershipStatus = () => useWrite(data.setPartnershipStatus,
 
 export const useAddResult = () => useWrite(data.addResult, RESULTS)
 export const useDeleteResult = () => useWrite(data.deleteResult, RESULTS)
+
+export const useExportMyData = () => useMutation({ mutationFn: data.exportMyData })
+
+/** Deletes the account and drops every cached read, since they belonged to that user. */
+export function useDeleteMyAccount() {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: data.deleteMyAccount, onSuccess: () => client.clear() })
+}
