@@ -1,5 +1,7 @@
-import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
+import { Search } from "lucide-react"
+import { useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
 import { initials } from "@/lib/constants"
 import type { Role } from "@/lib/types"
 
@@ -37,7 +39,7 @@ export function Card({ className = "", ...props }: ComponentProps<"div">) {
 }
 
 const inputClasses =
-  "w-full rounded-xl border border-line-strong bg-white px-3.5 text-[15px] text-ink placeholder:text-muted/70 focus:border-brand focus:outline-hidden focus:ring-2 focus:ring-brand/20"
+  "rounded-xl border border-line-strong bg-white px-3.5 text-[15px] text-ink placeholder:text-muted/70 focus:border-brand focus:outline-hidden focus:ring-2 focus:ring-brand/20"
 
 interface FieldShellProps {
   id: string
@@ -64,7 +66,7 @@ type ShellProps = Omit<FieldShellProps, "children">
 export function Field({ id, label, hint, className, ...input }: ShellProps & Omit<ComponentProps<"input">, "id">) {
   return (
     <FieldShell id={id} label={label} hint={hint} className={className}>
-      <input id={id} className={`${inputClasses} h-12`} {...input} />
+      <input id={id} className={`${inputClasses} h-12 w-full`} {...input} />
     </FieldShell>
   )
 }
@@ -72,30 +74,77 @@ export function Field({ id, label, hint, className, ...input }: ShellProps & Omi
 export function TextAreaField({ id, label, hint, className, ...textarea }: ShellProps & Omit<ComponentProps<"textarea">, "id">) {
   return (
     <FieldShell id={id} label={label} hint={hint} className={className}>
-      <textarea id={id} className={`${inputClasses} min-h-[110px] py-3`} {...textarea} />
+      <textarea id={id} className={`${inputClasses} min-h-[110px] w-full py-3`} {...textarea} />
     </FieldShell>
   )
 }
 
-export function SelectField({
-  id,
-  label,
-  hint,
-  className,
-  options,
-  ...select
-}: ShellProps & { options: readonly string[] } & Omit<ComponentProps<"select">, "id">) {
+interface SelectProps extends ComponentProps<"select"> {
+  /** Stored values. */
+  options: readonly string[]
+  /** Shown text per value; defaults to the value itself. */
+  optionLabel?: (value: string) => string
+  placeholder?: string
+}
+
+/** A select with an empty first option, styled like the other inputs. Full width unless `className` sets a width. */
+export function Select({ options, optionLabel = (o) => o, placeholder, className = "w-full", ...select }: SelectProps) {
+  const t = useTranslations("Common")
+  return (
+    <select className={`${inputClasses} h-12 ${className}`} {...select}>
+      <option value="">{placeholder ?? t("select")}</option>
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {optionLabel(o)}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+export function SelectField({ id, label, hint, className, ...select }: ShellProps & Omit<SelectProps, "id" | "className">) {
   return (
     <FieldShell id={id} label={label} hint={hint} className={className}>
-      <select id={id} className={`${inputClasses} h-12`} {...select}>
-        <option value="">Select…</option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
-      </select>
+      <Select id={id} {...select} />
     </FieldShell>
+  )
+}
+
+/** A search box with a leading icon; `label` is read by screen readers. */
+export function SearchInput({ label, className = "", ...input }: { label?: string } & ComponentProps<"input">) {
+  const t = useTranslations("Common")
+  return (
+    <label className={`flex h-12 min-w-0 items-center gap-2.5 rounded-xl border border-line-strong bg-white px-3.5 ${className}`}>
+      <Search aria-hidden="true" className="h-[18px] w-[18px] text-muted" />
+      <span className="sr-only">{label ?? t("search")}</span>
+      <input type="search" className="min-w-0 flex-1 bg-transparent text-[15px] outline-hidden" {...input} />
+    </label>
+  )
+}
+
+interface SegmentedControlProps<T extends string> {
+  label: string
+  options: readonly { value: T; label: string }[]
+  value: T
+  onChange: (value: T) => void
+}
+
+/** A row of mutually exclusive toggle buttons. */
+export function SegmentedControl<T extends string>({ label, options, value, onChange }: SegmentedControlProps<T>) {
+  return (
+    <div className="flex rounded-xl bg-mist p-1" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`h-10 rounded-lg px-4 text-sm font-bold ${value === o.value ? "bg-white text-ink shadow-xs" : "text-muted"}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -165,11 +214,12 @@ export function ErrorNote({ children }: { children?: ReactNode }) {
   )
 }
 
-export function Spinner({ label = "Loading…" }: { label?: string }) {
+export function Spinner({ label }: { label?: string }) {
+  const t = useTranslations("Common")
   return (
     <div className="flex items-center justify-center gap-3 py-24 text-muted" role="status">
       <span className="h-5 w-5 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
-      {label}
+      {label ?? t("loading")}
     </div>
   )
 }

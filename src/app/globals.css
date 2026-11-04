@@ -47,6 +47,11 @@
   }
 }
 
+/* Plus Jakarta Sans has no Cyrillic: Bulgarian pages switch the whole page to Onest. */
+html:lang(bg) {
+  --font-sans: var(--font-onest), system-ui, sans-serif;
+}
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not(:disabled) {

@@ -1,31 +1,48 @@
 "use client"
 import type { ReactNode } from "react"
-import { FirebaseError } from "firebase/app"
-import { GoogleAuthProvider, signInWithPopup, type User } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { isAuthError } from "@supabase/supabase-js"
+import { useTranslations } from "next-intl"
+import { getPathname } from "@/i18n/navigation"
+import type { Locale } from "@/i18n/routing"
+import { supabase } from "@/lib/supabase"
 import { Button, Card } from "./ui"
 
-const authMessages: Record<string, string> = {
-  "auth/email-already-in-use": "An account with this email already exists. Try logging in.",
-  "auth/invalid-email": "That email address doesn't look right.",
-  "auth/weak-password": "Use at least 6 characters for your password.",
-  "auth/invalid-credential": "Email or password is incorrect.",
-  "auth/wrong-password": "Email or password is incorrect.",
-  "auth/user-not-found": "Email or password is incorrect.",
-  "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
-  "auth/popup-closed-by-user": "The Google window was closed before signing in."
+export type AuthErrorKey =
+  | "emailInUse"
+  | "invalidEmail"
+  | "weakPassword"
+  | "invalidCredentials"
+  | "emailNotConfirmed"
+  | "tooManyRequests"
+  | "generic"
+
+const errorKeys: Record<string, AuthErrorKey> = {
+  user_already_exists: "emailInUse",
+  email_exists: "emailInUse",
+  email_address_invalid: "invalidEmail",
+  weak_password: "weakPassword",
+  invalid_credentials: "invalidCredentials",
+  email_not_confirmed: "emailNotConfirmed",
+  over_request_rate_limit: "tooManyRequests",
+  over_email_send_rate_limit: "tooManyRequests"
 }
 
-export function authErrorMessage(error: unknown): string {
-  return (error instanceof FirebaseError && authMessages[error.code]) || "Something went wrong. Please try again."
+/** Maps a sign-in error to its message key under Auth.errors. */
+export function authErrorKey(error: unknown): AuthErrorKey {
+  return (isAuthError(error) && error.code && errorKeys[error.code]) || "generic"
 }
 
-export async function signInWithGoogle(): Promise<User> {
-  const { user } = await signInWithPopup(auth, new GoogleAuthProvider())
-  return user
+/** Leaves for Google and comes back to `href` (in the given language) signed in. */
+export async function signInWithGoogle(href: string, locale: Locale): Promise<void> {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}${getPathname({ href, locale })}` }
+  })
+  if (error) throw error
 }
 
 export function GoogleButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+  const t = useTranslations("Auth")
   return (
     <Button variant="outline" className="w-full" onClick={onClick} disabled={disabled}>
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -34,7 +51,7 @@ export function GoogleButton({ onClick, disabled }: { onClick: () => void; disab
         <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
         <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
       </svg>
-      Continue with Google
+      {t("google")}
     </Button>
   )
 }
@@ -43,7 +60,7 @@ interface AuthCardProps {
   title: string
   subtitle: string
   children: ReactNode
-  footer: ReactNode
+  footer?: ReactNode
 }
 
 export default function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
@@ -56,7 +73,7 @@ export default function AuthCard({ title, subtitle, children, footer }: AuthCard
         </div>
         {children}
       </Card>
-      <p className="mt-6 text-center text-sm text-muted">{footer}</p>
+      {footer && <p className="mt-6 text-center text-sm text-muted">{footer}</p>}
     </main>
   )
 }

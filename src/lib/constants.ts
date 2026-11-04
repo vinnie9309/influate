@@ -1,9 +1,6 @@
 import type { Role } from "./types"
 
-export const ROLES: Record<Role, { label: string; plural: string }> = {
-  creator: { label: "Creator", plural: "Creators" },
-  brand: { label: "Brand", plural: "Brands" }
-}
+// Stored values. Their labels live in messages/*.json (Categories, Platforms, Followers).
 
 export const CATEGORIES = [
   "Fitness",
@@ -26,13 +23,13 @@ export const AUDIENCE_AGES = ["13–17", "18–24", "18–34", "25–34", "25–
 
 export const FOLLOWER_RANGES = ["Under 1K", "1K–5K", "5K–10K", "10K–50K", "50K–100K", "100K+"] as const
 
+export type Category = (typeof CATEGORIES)[number]
+export type Platform = (typeof PLATFORMS)[number]
+export type FollowerRange = (typeof FOLLOWER_RANGES)[number]
+
 export const otherRole = (role: Role): Role => (role === "creator" ? "brand" : "creator")
 
 export function initials(name = ""): string {
   const [first = "", second = ""] = name.trim().split(/\s+/)
   return (first.charAt(0) + second.charAt(0)).toUpperCase() || "?"
 }
-
-const money = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
-
-export const formatMoney = (value: number): string => money.format(value || 0)

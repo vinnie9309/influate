@@ -1,3 +1,5 @@
+import { useFormatter, useTranslations } from "next-intl"
+
 // Creators (left) connect to brands (right); an affiliate code travels each link
 // and the brand lights up, then an earnings card rises. Pure SVG + CSS (see globals.css).
 
@@ -36,19 +38,18 @@ const brands: readonly GraphNode[] = [
   { y: 292, label: "Ve", fill: "#F2B544", text: "#14201C" }
 ]
 
+const SAMPLE_EARNINGS = 1240
+
 export default function HeroAnimation() {
+  const t = useTranslations("Hero")
+  const format = useFormatter()
   return (
     <div className="relative rounded-3xl border border-line bg-white p-6 shadow-float">
       <div className="flex justify-between px-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">
-        <span>Creators</span>
-        <span>Brands</span>
+        <span>{t("creators")}</span>
+        <span>{t("brands")}</span>
       </div>
-      <svg
-        viewBox="0 0 520 400"
-        className="block h-auto w-full"
-        role="img"
-        aria-label="Creators connect to brands and affiliate codes travel between them"
-      >
+      <svg viewBox="0 0 520 400" className="block h-auto w-full" role="img" aria-label={t("aria")}>
         <g fill="none" stroke="#E2E8E4" strokeWidth="2" strokeDasharray="4 6">
           {links.map(({ code, d }) => (
             <path key={code} d={d} />
@@ -103,10 +104,12 @@ export default function HeroAnimation() {
         className="fx-card absolute -bottom-7 left-1/2 ml-[-150px] flex w-[300px] items-center justify-between gap-3 rounded-2xl bg-ink px-[18px] py-4 text-paper shadow-card"
       >
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-[#A9BAB3]">Partnership earnings this month</span>
-          <span className="text-2xl font-extrabold tracking-[-0.02em]">€1,240</span>
+          <span className="text-xs text-[#A9BAB3]">{t("earnings")}</span>
+          <span className="text-2xl font-extrabold tracking-[-0.02em]">
+            {format.number(SAMPLE_EARNINGS, { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
+          </span>
         </div>
-        <span className="rounded-full bg-brand px-2.5 py-1.5 text-xs font-bold">3 active</span>
+        <span className="rounded-full bg-brand px-2.5 py-1.5 text-xs font-bold">{t("active", { count: 3 })}</span>
       </div>
     </div>
   )

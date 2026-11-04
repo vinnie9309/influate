@@ -1,27 +1,33 @@
 import { useSyncExternalStore } from "react"
-import { onAuthStateChanged, type User } from "firebase/auth"
-import { auth } from "./firebase"
+import type { User } from "@supabase/supabase-js"
+import { supabase } from "./supabase"
 
-// A tiny external store around Firebase's auth listener, read with useSyncExternalStore
+// A tiny external store around Supabase's auth listener, read with useSyncExternalStore
 // so no component has to subscribe in an effect.
 
 interface AuthSnapshot {
   user: User | null
-  /** False until Firebase has restored (or ruled out) a signed-in session. */
+  /** False until Supabase has restored (or ruled out) a signed-in session. */
   ready: boolean
 }
 
 const serverSnapshot: AuthSnapshot = { user: null, ready: false }
 let snapshot: AuthSnapshot = serverSnapshot
 const listeners = new Set<() => void>()
-let stopListening: (() => void) | null = null
+let listening = false
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener)
-  stopListening ??= onAuthStateChanged(auth, (user) => {
-    snapshot = { user, ready: true }
-    listeners.forEach((notify) => notify())
-  })
+  if (!listening) {
+    listening = true
+    // Fires INITIAL_SESSION once the stored session (or OAuth redirect) has been processed.
+    supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user ?? null
+      if (snapshot.ready && snapshot.user?.id === user?.id) return
+      snapshot = { user, ready: true }
+      listeners.forEach((notify) => notify())
+    })
+  }
   return () => {
     listeners.delete(listener)
   }
