@@ -29,7 +29,7 @@ No special-category data (Art. 9), no profiling with legal effects, no advertisi
 
 | Processor | Service | Data location | Transfer safeguard | DPA |
 |---|---|---|---|---|
-| Supabase, Inc. | Postgres database, authentication | EU: [SUPABASE REGION] | EU–US Data Privacy Framework / SCCs for support access | Accept in Supabase dashboard → Organization → Legal documents |
+| Supabase, Inc. | Postgres database, authentication | EU: Frankfurt, Germany (eu-central-1) | EU–US Data Privacy Framework / SCCs for support access | Accept in Supabase dashboard → Organization → Legal documents |
 | Vercel Inc. | Website hosting, request logs | Global edge network | EU–US Data Privacy Framework / SCCs | Included in Vercel's terms; signed copy downloadable from vercel.com/legal |
 | Google (only if a user chooses Google sign-in) | Identity provider | — | Google is an independent controller for the sign-in | — |
 
@@ -66,7 +66,7 @@ No special-category data (Art. 9), no profiling with legal effects, no advertisi
 ## Open items
 
 - [ ] Fill in the company details here and in `src/lib/legal.ts`.
-- [ ] Confirm the Supabase project region is in the EU and record it in both places.
+- [x] Supabase project region confirmed: eu-central-1 (Frankfurt), recorded here and in `src/lib/legal.ts`.
 - [ ] Accept the Supabase DPA and download Vercel's.
 - [ ] Record the backup retention for the Supabase plan in `src/lib/legal.ts` (`backupDays`).
 - [ ] Have a lawyer review the privacy and cookie policies (both languages).

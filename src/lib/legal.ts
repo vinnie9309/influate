@@ -7,7 +7,7 @@ export const LEGAL = {
   address: "[REGISTERED ADDRESS]",
   privacyEmail: "[PRIVACY CONTACT EMAIL]",
   /** Supabase dashboard → Project settings → General → Region (must be an EU region). */
-  dataRegion: "[SUPABASE REGION, e.g. Frankfurt, eu-central-1]",
+  dataRegion: "Frankfurt, Germany (AWS eu-central-1)",
   /** Supabase dashboard → Database → Backups; depends on the plan. */
   backupDays: "[BACKUP RETENTION IN DAYS]",
   /** Names the browser storage key on the cookie page. */
