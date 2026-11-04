@@ -105,7 +105,7 @@ Supabase project: `eqyfewqbbxblacvktbdf` (must be in an EU region).
    ```bash
    npx supabase login
    npx supabase link --project-ref eqyfewqbbxblacvktbdf
-   npx supabase db push
+   npx supabase db push --remote   # the CLI targets the local stack unless told otherwise
    ```
 2. In Supabase → Authentication → URL Configuration, set the Site URL to your production domain and add
    `https://<your-domain>/**` (and `https://*.vercel.app/**` for previews) to the redirect URLs.
